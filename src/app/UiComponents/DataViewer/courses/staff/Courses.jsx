@@ -10,6 +10,10 @@ import {
   AppBar,
   Toolbar,
   Container,
+  Alert,
+  CardActions,
+  Button,
+  Divider,
 } from "@mui/material";
 
 import { initialPageLimit } from "@/app/helpers/constants";
@@ -53,7 +57,7 @@ export default function StaffCourses() {
   }
   useEffect(() => {
     getCourses();
-  }, []);
+  }, [page, limit]);
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -77,8 +81,13 @@ export default function StaffCourses() {
       </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {!loading && courses && courses.length === 0 && (
+          <Alert severity="error">
+            No Courses Available for your current role
+          </Alert>
+        )}
         <Grid container spacing={3}>
-          {courses.map((course) => (
+          {courses?.map((course) => (
             <Grid size={{ md: 6, lg: 4 }} key={course.id}>
               <Card
                 sx={{
@@ -124,6 +133,16 @@ export default function StaffCourses() {
                     </Typography>
                   </Box>
                 </CardContent>
+                <Divider />
+                <CardActions>
+                  <Button
+                    component="a"
+                    href={`/dashboard/courses/${course.id}`}
+                    variant="outlined"
+                  >
+                    Preview
+                  </Button>
+                </CardActions>
               </Card>
             </Grid>
           ))}

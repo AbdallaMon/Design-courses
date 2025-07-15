@@ -89,7 +89,7 @@ export default function CourseAdminPage() {
   }
   useEffect(() => {
     getCourses();
-  }, []);
+  }, [page, limit]);
   const handleEditClick = (course) => {
     setSelectedCourse(course);
     setEditForm({
