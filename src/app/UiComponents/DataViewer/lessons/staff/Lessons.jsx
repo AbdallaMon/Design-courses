@@ -31,155 +31,13 @@ import {
 } from "react-icons/md";
 import LessonComponent from "./Lesson";
 import TestComponent from "../../test/staff/Test";
-
-// Mock data structure matching your DB schema
-const mockCourseData = {
-  id: 1,
-  title: "Advanced React Development",
-  description:
-    "Master advanced React concepts including hooks, context, performance optimization, and testing",
-  imageUrl: "https://via.placeholder.com/400x200",
-  isPublished: true,
-  lessons: [
-    {
-      id: 1,
-      title: "Introduction to React Hooks",
-      description:
-        "Learn the fundamentals of React hooks including useState and useEffect",
-      duration: 45,
-      order: 1,
-      isPreviewable: true,
-      videos: [{ url: "https://example.com/video1" }],
-      tests: [],
-    },
-    {
-      id: 2,
-      title: "Advanced Hook Patterns",
-      description: "Explore custom hooks and advanced patterns",
-      duration: 60,
-      order: 2,
-      isPreviewable: false,
-      videos: [{ url: "https://example.com/video2" }],
-      tests: [],
-    },
-    {
-      id: 3,
-      title: "Context API and State Management",
-      description: "Deep dive into React Context and state management patterns",
-      duration: 75,
-      order: 3,
-      isPreviewable: false,
-      videos: [{ url: "https://example.com/video3" }],
-      tests: [
-        {
-          id: 1,
-          title: "Context API Quiz",
-          type: "LESSON",
-          questions: [
-            {
-              id: 1,
-              type: "MULTIPLE_CHOICE",
-              question: "What is the main purpose of React Context?",
-              choices: [
-                { text: "State management", value: "state", isCorrect: true },
-                { text: "Routing", value: "routing", isCorrect: false },
-              ],
-            },
-          ],
-        },
-        {
-          id: 2,
-          title: "State Management Assessment",
-          type: "LESSON",
-          questions: [
-            {
-              id: 2,
-              type: "TRUE_FALSE",
-              question: "Context should be used for all state management",
-              choices: [
-                { text: "True", value: "true", isCorrect: false },
-                { text: "False", value: "false", isCorrect: true },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 4,
-      title: "Performance Optimization",
-      description: "Learn React performance optimization techniques",
-      duration: 90,
-      order: 4,
-      isPreviewable: false,
-      videos: [{ url: "https://example.com/video4" }],
-      tests: [],
-    },
-    {
-      id: 5,
-      title: "Testing React Applications",
-      description: "Comprehensive testing strategies for React apps",
-      duration: 120,
-      order: 5,
-      isPreviewable: false,
-      videos: [{ url: "https://example.com/video5" }],
-      tests: [],
-    },
-    {
-      id: 6,
-      title: "Advanced Patterns and Best Practices",
-      description: "Learn advanced React patterns and industry best practices",
-      duration: 100,
-      order: 6,
-      isPreviewable: false,
-      videos: [{ url: "https://example.com/video6" }],
-      tests: [],
-    },
-  ],
-  tests: [
-    {
-      id: 10,
-      title: "Final Assessment Part 1",
-      type: "FINAL",
-      questions: [
-        {
-          id: 10,
-          type: "MULTIPLE_CHOICE",
-          question: "Which hook is used for side effects?",
-          choices: [
-            { text: "useEffect", value: "useEffect", isCorrect: true },
-            { text: "useState", value: "useState", isCorrect: false },
-          ],
-        },
-      ],
-    },
-    {
-      id: 11,
-      title: "Final Assessment Part 2",
-      type: "FINAL",
-      questions: [
-        {
-          id: 11,
-          type: "TEXT",
-          question: "Explain the concept of lifting state up in React",
-          choices: [],
-        },
-      ],
-    },
-  ],
-};
-
-const mockUserProgress = {
-  completedLessons: [1, 2], // lesson IDs
-  passedTests: [1], // test IDs
-  testAttempts: [
-    { testId: 1, passed: true, score: 85 },
-    { testId: 2, passed: false, score: 45 },
-  ],
-};
+import { getDataAndSet } from "@/app/helpers/functions/getDataAndSet";
+import FullScreenLoader from "@/app/UiComponents/feedback/loaders/FullscreenLoader";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { useSearchParams } from "next/navigation";
 
 // Simple Lesson Component
-const LessonView = ({ isCompleted, lesson, onBack }) => {
+const LessonView = ({ isCompleted, lesson, onBack, onComplete }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -193,6 +51,7 @@ const LessonView = ({ isCompleted, lesson, onBack }) => {
           isCompleted={isCompleted}
           lessonId={lesson.id}
           courseId={lesson.courseId}
+          onComplete={onComplete}
         />
       </Box>
     </Container>
@@ -213,12 +72,31 @@ const TestView = ({ test, onBack }) => {
 };
 
 const LesssonView = ({ courseId }) => {
-  const [course, setCourse] = useState(mockCourseData);
-  const [userProgress] = useState(mockUserProgress);
+  const [course, setCourse] = useState();
+  const [userProgress, setUserProgress] = useState();
   const [selectedItem, setSelectedItem] = useState(null);
-  const [viewType, setViewType] = useState("course"); // 'course', 'lesson', 'test'
-
+  const [viewType, setViewType] = useState("course");
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  let stop = false;
+  let lastAvailableIndex = 0;
+  const searchParams = useSearchParams();
+  const type = searchParams.get("type");
+  const itemId = searchParams.get("itemId");
+  async function getCourse() {
+    await getDataAndSet({
+      url: `shared/courses/${courseId}?role=${user.role}&`,
+      setLoading,
+      setData: setCourse,
+    });
+    await getDataAndSet({
+      url: `shared/courses/${courseId}/progress?role=${user.role}&`,
+      setLoading,
+      setData: setUserProgress,
+    });
+  }
   const createCourseStructure = () => {
+    if (!course || !course.lessons) return;
     const items = [];
 
     course.lessons.forEach((lesson) => {
@@ -231,10 +109,19 @@ const LesssonView = ({ courseId }) => {
         order: lesson.order,
         data: lesson,
       });
-
+      if (userProgress?.completedLessons.includes(lesson.id) && !stop) {
+        lastAvailableIndex++;
+      } else {
+        stop = true;
+      }
       // Add tests after the lesson
       if (lesson.tests && lesson.tests.length > 0) {
         lesson.tests.forEach((test) => {
+          if (test.attempts.length > 0 && !stop) {
+            lastAvailableIndex++;
+          } else {
+            stop = true;
+          }
           items.push({
             type: "test",
             id: test.id,
@@ -261,39 +148,39 @@ const LesssonView = ({ courseId }) => {
 
     return items;
   };
+  const courseItems = createCourseStructure();
+
+  useEffect(() => {
+    getCourse();
+  }, [courseId]);
+  useEffect(() => {
+    if (
+      course &&
+      userProgress &&
+      itemId &&
+      type &&
+      courseItems &&
+      courseItems.length > 0 &&
+      !selectedItem &&
+      viewType !== "COURSE"
+    ) {
+      const item = courseItems?.find(
+        (item) => item.id == itemId && type === item.type
+      );
+
+      setSelectedItem(item);
+
+      setViewType(type);
+    }
+  }, [type, itemId, course, userProgress, courseItems, selectedItem]);
 
   const isItemAccessible = (item, index, items) => {
-    if (item.type === "lesson") {
-      // First lesson is always accessible if previewable
-      if (index === 0 && item.data.isPreviewable) return true;
-
-      // Check if previous lesson is completed
-      const prevItems = items.slice(0, index);
-      const prevLesson = prevItems.reverse().find((i) => i.type === "lesson");
-
-      if (!prevLesson) return item.data.isPreviewable;
-
-      return userProgress.completedLessons.includes(prevLesson.id);
-    }
-
-    if (item.type === "test") {
-      if (item.isFinal) {
-        // Final tests require all lessons to be completed
-        return course.lessons.every((lesson) =>
-          userProgress.completedLessons.includes(lesson.id)
-        );
-      }
-
-      // Lesson tests require the lesson to be completed
-      return userProgress.completedLessons.includes(item.lessonId);
-    }
-
-    return false;
+    return index <= lastAvailableIndex;
   };
 
   const getItemStatus = (item) => {
     if (item.type === "lesson") {
-      return userProgress.completedLessons.includes(item.id)
+      return userProgress?.completedLessons.includes(item.id)
         ? "completed"
         : "pending";
     }
@@ -312,6 +199,7 @@ const LesssonView = ({ courseId }) => {
   };
 
   const getStatusIcon = (item, isAccessible) => {
+    if (!item) return;
     if (!isAccessible) return <Lock color="disabled" />;
 
     const status = getItemStatus(item);
@@ -369,9 +257,6 @@ const LesssonView = ({ courseId }) => {
   };
 
   const handleBack = () => {
-    setSelectedItem(null);
-    setViewType("course");
-
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.delete("type");
     searchParams.delete("itemId");
@@ -380,14 +265,16 @@ const LesssonView = ({ courseId }) => {
       searchParams.toString() ? `?${searchParams.toString()}` : ""
     }`;
     window.history.pushState(null, "", newRelativePathQuery);
+    window.setTimeout(() => {
+      setSelectedItem(null);
+      setViewType("course");
+    }, 50);
   };
 
   const calculateProgress = () => {
-    const totalLessons = course.lessons.length;
-    const completedLessons = userProgress.completedLessons.length;
-    return totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+    const items = courseItems;
+    return items?.length > 0 ? (lastAvailableIndex / items.length) * 100 : 0;
   };
-  const courseItems = createCourseStructure();
   if (viewType === "lesson" && selectedItem) {
     return (
       <LessonView
@@ -396,27 +283,27 @@ const LesssonView = ({ courseId }) => {
         )}
         lesson={selectedItem.data}
         onBack={handleBack}
+        onComplete={getCourse}
       />
     );
   }
-
   if (viewType === "test" && selectedItem) {
     return <TestView test={selectedItem.data} onBack={handleBack} />;
   }
 
   return (
     <Container maxWidth="lg" sx={{ py: 2 }}>
-      {/* Course Header */}
+      {loading && <FullScreenLoader />}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <School sx={{ mr: 2, fontSize: 40, color: "primary.main" }} />
             <Box sx={{ flexGrow: 1 }}>
               <Typography variant="h4" gutterBottom>
-                {course.title}
+                {course?.title}
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                {course.description}
+                {course?.description}
               </Typography>
             </Box>
           </Box>
@@ -434,18 +321,18 @@ const LesssonView = ({ courseId }) => {
 
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
             <Chip
-              label={`${course.lessons.length} Lessons`}
+              label={`${course?._count.lessons} Lessons`}
               variant="outlined"
               size="small"
             />
             <Chip
-              label={`${userProgress.completedLessons.length} Completed`}
+              label={`${userProgress?.completedLessons.length} Completed`}
               variant="outlined"
               size="small"
               color="success"
             />
             <Chip
-              label={`${course.tests.length} Final Tests`}
+              label={`${course?._count.tests} Final Tests`}
               variant="outlined"
               size="small"
             />
@@ -461,7 +348,7 @@ const LesssonView = ({ courseId }) => {
           </Typography>
 
           <List>
-            {courseItems.map((item, index) => {
+            {courseItems?.map((item, index) => {
               const isAccessible = isItemAccessible(item, index, courseItems);
 
               return (
@@ -531,7 +418,7 @@ const LesssonView = ({ courseId }) => {
                     </ListItemButton>
                   </ListItem>
 
-                  {index < courseItems.length - 1 && <Divider />}
+                  {index < courseItems?.length - 1 && <Divider />}
                 </React.Fragment>
               );
             })}

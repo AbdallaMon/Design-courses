@@ -125,7 +125,7 @@ const TestQuestionManager = ({ testId }) => {
   };
 
   // Update choice
-  const updateChoice = (choiceId, field, value, questionType) => {
+  const updateChoice = (choiceId, field, value) => {
     setNewQuestion((prev) => ({
       ...prev,
       choices: prev.choices.map((choice) =>
@@ -133,7 +133,7 @@ const TestQuestionManager = ({ testId }) => {
           ? { ...choice, [field]: value }
           : (field === "isCorrect" &&
               prev.type === QuestionTypes.SINGLE_CHOICE) ||
-            (field === "isCorrect" && QuestionTypes.TRUE_FALSE)
+            (field === "isCorrect" && prev.type === QuestionTypes.TRUE_FALSE)
           ? { ...choice, isCorrect: false }
           : choice
       ),

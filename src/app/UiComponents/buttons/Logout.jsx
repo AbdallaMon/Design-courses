@@ -8,17 +8,17 @@ import { FiLogOut } from "react-icons/fi";
 import React from "react";
 
 export default function Logout({ fit }) {
-  const { setLoading } = useToastContext();
+  const { setToastLoading } = useToastContext();
   const { setUser, setIsLoggedIn } = useAuth();
   const router = useRouter();
 
   async function handleLogout() {
     const logout = await handleRequestSubmit(
       {},
-      setLoading,
+      setToastLoading,
       `auth/logout`,
       false,
-      "جاري تسجيل الخروج"
+      "Logging out"
     );
     if (logout?.status === 200) {
       setIsLoggedIn(false);

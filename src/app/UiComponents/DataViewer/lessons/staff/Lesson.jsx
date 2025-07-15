@@ -29,82 +29,23 @@ import {
   MdOpenInNew as OpenInNew,
 } from "react-icons/md";
 
-import {
-  FaPlay,
-  FaFilePdf,
-  FaExternalLinkAlt,
-  FaQuestionCircle,
-  FaClock,
-  FaCheckCircle,
-} from "react-icons/fa";
+import { FaPlay, FaFilePdf, FaExternalLinkAlt } from "react-icons/fa";
 import FullScreenLoader from "@/app/UiComponents/feedback/loaders/FullscreenLoader";
 import { getDataAndSet } from "@/app/helpers/functions/getDataAndSet";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
+import { useToastContext } from "@/app/providers/ToastLoadingProvider";
 
-// Mock data based on your schema
-const mockLessonData = {
-  id: 1,
-  courseId: 1,
-  title: "Introduction to React Hooks",
-  description:
-    "Learn the fundamentals of React Hooks including useState, useEffect, and custom hooks. This comprehensive lesson covers practical examples and best practices.",
-  duration: 45,
-  order: 1,
-  isPreviewable: true,
-  videos: [
-    {
-      id: 1,
-      lessonId: 1,
-      url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      videoType: "URL",
-      order: 0,
-    },
-    {
-      id: 2,
-      lessonId: 1,
-      url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      videoType: "IFRAME",
-      order: 1,
-    },
-  ],
-  pdfs: [
-    {
-      id: 1,
-      lessonId: 1,
-      url: "https://example.com/react-hooks-guide.pdf",
-      order: 0,
-    },
-    {
-      id: 2,
-      lessonId: 1,
-      url: "https://example.com/hooks-cheatsheet.pdf",
-      order: 1,
-    },
-  ],
-  links: [
-    {
-      id: 1,
-      lessonId: 1,
-      url: "https://reactjs.org/docs/hooks-intro.html",
-      title: "Official React Hooks Documentation",
-      order: 0,
-    },
-    {
-      id: 2,
-      lessonId: 1,
-      url: "https://github.com/facebook/react",
-      title: "React GitHub Repository",
-      order: 1,
-    },
-  ],
-};
-
-const LessonComponent = ({ lessonId, isCompleted, courseId }) => {
+const LessonComponent = ({ lessonId, isCompleted, courseId, onComplete }) => {
+  const [completed, setCompleted] = useState(isCompleted);
   const [expandedSection, setExpandedSection] = useState("videos");
-  const [lesson, setLesson] = useState(mockLessonData);
+  const [lesson, setLesson] = useState();
   const [loading, setLoading] = useState(false);
+  const { setToastLoading } = useToastContext();
+  const { user } = useAuth();
   async function getLesson() {
     await getDataAndSet({
-      url: `shared/courses/${courseId}/lessons/${lessonId}`,
+      url: `shared/courses/${courseId}/lessons/${lessonId}?role=${user.role}&`,
       setLoading,
       setData: setLesson,
     });
@@ -118,7 +59,22 @@ const LessonComponent = ({ lessonId, isCompleted, courseId }) => {
     setExpandedSection(isExpanded ? section : false);
   };
   function calculateProgress() {
-    return isCompleted ? "COMPLETED" : "IN PROGRESS";
+    return completed ? "COMPLETED" : "IN PROGRESS";
+  }
+  async function markLessonAsCompleted() {
+    const req = await handleRequestSubmit(
+      {},
+      setToastLoading,
+      `shared/courses/${courseId}/lessons/${lesson.id}`,
+      false,
+      "Updating",
+      false,
+      "PATCH"
+    );
+    if (req.status === 200) {
+      onComplete();
+      setCompleted(true);
+    }
   }
   const renderVideo = (video) => {
     if (video.videoType === "IFRAME") {
@@ -244,136 +200,153 @@ const LessonComponent = ({ lessonId, isCompleted, courseId }) => {
   return (
     <Container maxWidth="lg" sx={{ p: 0 }}>
       {loading && <FullScreenLoader />}
-      <Paper
-        elevation={3}
-        sx={{ p: 3, px: { xs: 1, md: 3 }, mb: 3, borderRadius: 2 }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            mb: 2,
-          }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{ fontWeight: "bold", mb: 1 }}
-            >
-              {lesson.title}
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-              {lesson.description}
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Chip
-              icon={<Timer />}
-              label={`${lesson.duration} min`}
-              color="primary"
-            />
-          </Box>
-        </Box>
-
-        {/* Progress Bar */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Lesson Progress: {calculateProgress()}
-          </Typography>
-        </Box>
-      </Paper>
-
-      {/* Lesson Content Sections */}
-      <Box sx={{ mb: 3 }}>
-        {/* Videos Section */}
-        {lesson.videos.length > 0 && (
-          <Accordion
-            expanded={expandedSection === "videos"}
-            onChange={handleSectionChange("videos")}
-            sx={{ mb: 2 }}
-          >
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <FaPlay style={{ color: "#1976d2" }} />
-                <Typography variant="h6">
-                  Videos ({lesson.videos.length})
-                </Typography>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box>
-                {lesson.videos
-                  .sort((a, b) => a.order - b.order)
-                  .map((video) => renderVideo(video))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-        )}
-
-        {/* PDFs Section */}
-        {lesson.pdfs.length > 0 && (
-          <Accordion
-            expanded={expandedSection === "pdfs"}
-            onChange={handleSectionChange("pdfs")}
-            sx={{ mb: 2 }}
-          >
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <FaFilePdf style={{ color: "#d32f2f" }} />
-                <Typography variant="h6">
-                  PDF Resources ({lesson.pdfs.length})
-                </Typography>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box>
-                {lesson.pdfs
-                  .sort((a, b) => a.order - b.order)
-                  .map((pdf, index) => renderPDF(pdf, index))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-        )}
-
-        {/* Links Section */}
-        {lesson.links.length > 0 && (
-          <Accordion
-            expanded={expandedSection === "links"}
-            onChange={handleSectionChange("links")}
-            sx={{ mb: 2 }}
-          >
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <FaExternalLinkAlt style={{ color: "#1976d2" }} />
-                <Typography variant="h6">
-                  Additional Links ({lesson.links.length})
-                </Typography>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box>
-                {lesson.links
-                  .sort((a, b) => a.order - b.order)
-                  .map((link) => renderLink(link))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-        )}
-      </Box>
-
-      {/* Completion Alert */}
-      {calculateProgress() === "COMPLETE" && (
-        <Alert severity="success" sx={{ mb: 3 }} icon={<CheckCircle />}>
-          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-            Congratulations! You've completed this lesson.
-          </Typography>
-          <Typography variant="body2">
-            You can now proceed to the next lesson or review the content
-            anytime.
-          </Typography>
+      {!lesson && !loading && (
+        <Alert severity="error">
+          You are not allowed to access this lesson
         </Alert>
+      )}
+      {lesson && (
+        <>
+          {" "}
+          <Paper
+            elevation={3}
+            sx={{ p: 3, px: { xs: 1, md: 3 }, mb: 3, borderRadius: 2 }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 2,
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="h4"
+                  component="h1"
+                  sx={{ fontWeight: "bold", mb: 1 }}
+                >
+                  {lesson.title}
+                </Typography>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  {lesson.description}
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Chip
+                  icon={<Timer />}
+                  label={`${lesson.duration} min`}
+                  color="primary"
+                />
+              </Box>
+            </Box>
+
+            {/* Progress Bar */}
+            <Box sx={{ mb: 2, display: "flex", gap: 2, alignItems: "center" }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Lesson Progress: {calculateProgress()}
+              </Typography>
+              {!completed && (
+                <Button variant="outlined" onClick={markLessonAsCompleted}>
+                  Mark as completed
+                </Button>
+              )}
+            </Box>
+          </Paper>
+          {/* Lesson Content Sections */}
+          <Box sx={{ mb: 3 }}>
+            {/* Videos Section */}
+            {lesson.videos.length > 0 && (
+              <Accordion
+                expanded={expandedSection === "videos"}
+                onChange={handleSectionChange("videos")}
+                sx={{ mb: 2 }}
+              >
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <FaPlay style={{ color: "#1976d2" }} />
+                    <Typography variant="h6">
+                      Videos ({lesson.videos.length})
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Box>
+                    {lesson.videos
+                      .sort((a, b) => a.order - b.order)
+                      .map((video) => renderVideo(video))}
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
+            )}
+
+            {/* PDFs Section */}
+            {lesson.pdfs.length > 0 && (
+              <Accordion
+                expanded={expandedSection === "pdfs"}
+                onChange={handleSectionChange("pdfs")}
+                sx={{ mb: 2 }}
+              >
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <FaFilePdf style={{ color: "#d32f2f" }} />
+                    <Typography variant="h6">
+                      PDF Resources ({lesson.pdfs.length})
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Box>
+                    {lesson.pdfs
+                      .sort((a, b) => a.order - b.order)
+                      .map((pdf, index) => renderPDF(pdf, index))}
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
+            )}
+
+            {/* Links Section */}
+            {lesson.links.length > 0 && (
+              <Accordion
+                expanded={expandedSection === "links"}
+                onChange={handleSectionChange("links")}
+                sx={{ mb: 2 }}
+              >
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <FaExternalLinkAlt style={{ color: "#1976d2" }} />
+                    <Typography variant="h6">
+                      Additional Links ({lesson.links.length})
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Box>
+                    {lesson.links
+                      .sort((a, b) => a.order - b.order)
+                      .map((link) => renderLink(link))}
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
+            )}
+          </Box>
+          {/* Completion Alert */}
+          {calculateProgress() === "COMPLETE" && (
+            <Alert severity="success" sx={{ mb: 3 }} icon={<CheckCircle />}>
+              <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                Congratulations! You've completed this lesson.
+              </Typography>
+              <Typography variant="body2">
+                You can now proceed to the next lesson or review the content
+                anytime.
+              </Typography>
+            </Alert>
+          )}
+        </>
       )}
     </Container>
   );
