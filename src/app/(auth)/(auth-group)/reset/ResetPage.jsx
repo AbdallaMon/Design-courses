@@ -12,14 +12,14 @@ export default function ResetPage(props) {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  const { setLoading } = useToastContext();
+  const { setToastLoading } = useToastContext();
   const router = useRouter();
 
   async function handleReset(data) {
     try {
       await handleRequestSubmit(
         data,
-        setLoading,
+        setToastLoading,
         !token ? "auth/reset" : `auth/reset/${token}`,
         false,
         !token ? "Email is being reviewed" : "Resetting the password"

@@ -21,7 +21,7 @@ const CreateModal = ({
   withClose,
 }) => {
   const [open, setOpen] = useState(false);
-  const { setLoading } = useToastContext();
+  const { setToastLoading } = useToastContext();
   const { setAlertError } = useAlertContext();
 
   const handleOpen = () => setOpen(true);
@@ -39,7 +39,7 @@ const CreateModal = ({
       }
       const result = await handleRequestSubmit(
         formData,
-        setLoading,
+        setToastLoading,
         `${href}`,
         false,
         "Creating"

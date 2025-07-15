@@ -8,13 +8,13 @@ import AuthForm from "@/app/UiComponents/formComponents/forms/AuthForm";
 import { Button, Typography } from "@mui/material";
 
 export default function Page() {
-  const { setLoading } = useToastContext();
+  const { setToastLoading } = useToastContext();
   const { setIsLoggedIn, setUser } = useAuth();
 
   async function handleLogin(data) {
     const response = await handleRequestSubmit(
       data,
-      setLoading,
+      setToastLoading,
       "auth/login",
       false,
       "Logging"

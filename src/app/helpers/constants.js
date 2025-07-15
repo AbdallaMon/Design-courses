@@ -1,4 +1,4 @@
-export const initialPageLimit = 10;
+export const initialPageLimit = 20;
 export const totalLimitPages = [10, 20, 50, 100];
 export const simpleModalStyle = {
   position: "absolute",
@@ -23,4 +23,28 @@ export const simpleModalStyle = {
 
 export const NotificationType = {
   OTHER: "Other",
+};
+
+export const USER_ROLES = {
+  STAFF: "STAFF",
+  THREE_D_DESIGNER: "THREE_D_DESIGNER",
+  TWO_D_DESIGNER: "TWO_D_DESIGNER",
+  ACCOUNTANT: "ACCOUNTANT",
+  SUPER_ADMIN: "SUPER_ADMIN",
+};
+
+export const ROLE_LABELS = {
+  [USER_ROLES.ADMIN]: "Admin",
+  [USER_ROLES.STAFF]: "Sales",
+  [USER_ROLES.THREE_D_DESIGNER]: "3D Designer",
+  [USER_ROLES.TWO_D_DESIGNER]: "2D Designer",
+  [USER_ROLES.ACCOUNTANT]: "Accountant",
+  [USER_ROLES.SUPER_ADMIN]: "Super Admin",
+};
+
+export const QuestionTypes = {
+  MULTIPLE_CHOICE: "MULTIPLE_CHOICE",
+  SINGLE_CHOICE: "SINGLE_CHOICE",
+  TRUE_FALSE: "TRUE_FALSE",
+  TEXT: "TEXT",
 };

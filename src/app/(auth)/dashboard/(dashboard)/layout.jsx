@@ -100,7 +100,7 @@ export default function Layout({ admin, staff, threeD, twoD, accountant }) {
   }, [validatingAuth]);
   if (!user || !user.role) return null;
   const role = user?.role;
-
+  console.log(role, "role");
   return (
     <Box
       sx={{

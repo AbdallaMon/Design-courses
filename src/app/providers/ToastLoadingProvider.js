@@ -4,10 +4,10 @@ import { ToastContainer } from "react-toastify";
 
 export const ToastContext = createContext(null);
 export default function ToastProvider({ children }) {
-  const [loading, setLoading] = useState(false);
+  const [toastLoading, setToastLoading] = useState(false);
   return (
-    <ToastContext.Provider value={{ loading, setLoading }}>
-      {loading && (
+    <ToastContext.Provider value={{ toastLoading, setToastLoading }}>
+      {toastLoading && (
         <div
           style={{
             position: "fixed",

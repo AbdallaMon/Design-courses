@@ -23,7 +23,7 @@ export default function DeleteModal({
   extra,
   fullButtonWidth = false,
 }) {
-  const { setLoading } = useToastContext();
+  const { setToastLoading } = useToastContext();
   const [open, setOpen] = useState(false);
   const handleDeleteOpen = (item) => {
     setOpen(true);
@@ -36,7 +36,7 @@ export default function DeleteModal({
     const message = archive ? "جاري الارشفة..." : "Deleting";
     const result = await handleRequestSubmit(
       {},
-      setLoading,
+      setToastLoading,
       url,
       false,
       message,

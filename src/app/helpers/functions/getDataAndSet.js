@@ -9,6 +9,8 @@ export async function getDataAndSet({
   search,
   sort,
   others,
+  setTotal,
+  setTotalPages,
 }) {
   try {
     setLoading(true);
@@ -33,6 +35,12 @@ export async function getDataAndSet({
     const result = await response.json();
     if (status === 200) {
       setData(result.data);
+      if (setTotal) {
+        setTotal(result.total);
+      }
+      if (setTotalPages) {
+        setTotalPages(result.totalPages);
+      }
     }
     result.status = status;
     return result;

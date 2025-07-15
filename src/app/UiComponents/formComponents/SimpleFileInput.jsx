@@ -38,7 +38,6 @@ export default function SimpleFileInput({
       setPreview(null);
     }
   };
-  // const isPdf = preview && (preview.startsWith("blob:") || preview.endsWith(".pdf"));
   const renderPreview = () => {
     if (!preview) return null;
     return (
@@ -61,11 +60,15 @@ export default function SimpleFileInput({
                 : "inherit",
           })}
           type="file"
-          InputLabelProps={{ shrink: true }}
           variant={variant}
           helperText={helperText}
           fullWidth
-          accept={input && input?.accept}
+          slotProps={{
+            input: {
+              accept: input?.accept ?? "image/*",
+            },
+            inputLabel: { shrink: true },
+          }}
           onChange={(e) => {
             handleFileChange(e);
           }}

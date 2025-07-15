@@ -21,7 +21,7 @@ const EditModal = ({
   renderFormTitle,
   editFormButton = "Save",
 }) => {
-  const { setLoading } = useToastContext();
+  const { setToastLoading } = useToastContext();
   const [open, setOpen] = useState(false);
 
   const handleEditOpen = () => {
@@ -42,7 +42,7 @@ const EditModal = ({
     if (extraEditParams === undefined) extraEditParams = "";
     const result = await handleRequestSubmit(
       dataToSubmit,
-      setLoading,
+      setToastLoading,
       `${href}/${item.id}${extraEditParams}`,
       false,
       "Editing",

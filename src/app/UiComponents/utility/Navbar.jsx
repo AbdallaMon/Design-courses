@@ -23,6 +23,7 @@ import Logout from "@/app/UiComponents/buttons/Logout.jsx";
 import NotificationsIcon from "@/app/UiComponents/utility/NotificationIcon.jsx";
 import Link from "next/link";
 import { useAuth } from "@/app/providers/AuthProvider";
+import SignInWithDifferentUserRole from "../buttons/UserRoles";
 
 const Navbar = ({ links }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -301,8 +302,8 @@ const Navbar = ({ links }) => {
             </Box>
           )}
 
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <NotificationsIcon />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <SignInWithDifferentUserRole />
             <Logout />
           </Box>
         </Toolbar>
