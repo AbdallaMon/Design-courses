@@ -46,7 +46,7 @@ import FullScreenLoader from "@/app/UiComponents/feedback/loaders/FullscreenLoad
 import DeleteModal from "@/app/models/DeleteModal";
 import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
 import { useToastContext } from "@/app/providers/ToastLoadingProvider";
-import { FaQuestion } from "react-icons/fa";
+import { FaClipboardList, FaQuestion, FaTypo3 } from "react-icons/fa";
 
 export function Tests({ type, id }) {
   const [data, setData] = useState({ title: "", tests: [] });
@@ -202,6 +202,7 @@ export function Tests({ type, id }) {
                     <Typography variant="h6" component="h3" gutterBottom>
                       {test.title || `Test #${test.id}`}
                     </Typography>
+                    
                     <DeleteModal
                       buttonType="ICON"
                       item={test}
@@ -227,6 +228,13 @@ export function Tests({ type, id }) {
                   </Box>
 
                   <Box display="flex" gap={1} flexWrap="wrap">
+                         <Chip
+                      icon={<FaTypo3 />}
+                      label={`Type: ${test.type}`}
+                      size="small"
+                      variant="outlined"
+                    />
+
                     <Chip
                       icon={<FaQuestion />}
                       label={`${test._count?.questions || 0} question${
@@ -238,8 +246,8 @@ export function Tests({ type, id }) {
 
                     <Chip
                       icon={<MdPerson />}
-                      label={`${test._count?.submissions || 0} submission${
-                        (test._count?.submissions || 0) !== 1 ? "s" : ""
+                      label={`${test._count?.attempts || 0} submission${
+                        (test._count?.attempts || 0) !== 1 ? "s" : ""
                       }`}
                       size="small"
                       variant="outlined"
@@ -258,6 +266,15 @@ export function Tests({ type, id }) {
                     href={`/dashboard/tests/${test.id}`}
                   >
                     Add question
+                  </Button>
+                      <Button
+                    startIcon={<FaClipboardList  />}
+                    variant="contained"
+                    size="small"
+                    component={Link}
+                    href={`/dashboard/tests/${test.id}/attempts`}
+                  >
+                    Preview users attempts
                   </Button>
                   <Button
                     startIcon={<MdEdit />}

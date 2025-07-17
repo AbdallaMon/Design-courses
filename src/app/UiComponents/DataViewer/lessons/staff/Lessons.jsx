@@ -13,9 +13,7 @@ import {
   ListItemIcon,
   Chip,
   LinearProgress,
-  Paper,
   Button,
-  IconButton,
   Divider,
   useTheme,
   useMediaQuery,
@@ -60,7 +58,7 @@ const LessonView = ({ isCompleted, lesson, onBack, onComplete }) => {
 
 const TestView = ({ test, onBack }) => {
   return (
-    <Container maxWidth="md" sx={{ py: 2 }}>
+    <Container maxWidth="md" sx={{ py: 2,px:0 }}>
       <Box>
         <Button startIcon={<ArrowBack />} onClick={onBack} sx={{ mb: 2 }}>
           Back to Course
@@ -118,7 +116,14 @@ const LesssonView = ({ courseId }) => {
       if (lesson.tests && lesson.tests.length > 0) {
         lesson.tests.forEach((test) => {
           if (test.attempts.length > 0 && !stop) {
+            const now = new Date();
+      const hasFinishedAttempt = test.attempts.some((attempt) => {
+        if (attempt.passed||attempt.score>=80) return true;
+        return false;
+      });
+          if(hasFinishedAttempt){
             lastAvailableIndex++;
+          }
           } else {
             stop = true;
           }
@@ -134,7 +139,6 @@ const LesssonView = ({ courseId }) => {
       }
     });
 
-    // Add final tests at the end
     course.tests.forEach((test) => {
       items.push({
         type: "test",
@@ -256,7 +260,7 @@ const LesssonView = ({ courseId }) => {
     window.history.pushState(null, "", newRelativePathQuery);
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.delete("type");
     searchParams.delete("itemId");
@@ -265,10 +269,12 @@ const LesssonView = ({ courseId }) => {
       searchParams.toString() ? `?${searchParams.toString()}` : ""
     }`;
     window.history.pushState(null, "", newRelativePathQuery);
+    
     window.setTimeout(() => {
       setSelectedItem(null);
       setViewType("course");
     }, 50);
+    await getCourse();
   };
 
   const calculateProgress = () => {

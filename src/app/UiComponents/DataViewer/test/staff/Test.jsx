@@ -32,6 +32,7 @@ import {
   StepLabel,
   StepButton,
   CircularProgress,
+  debounce,
 } from "@mui/material";
 import {
   FaClock,
@@ -45,6 +46,11 @@ import {
   FaQuestionCircle,
 } from "react-icons/fa";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { getDataAndSet } from "@/app/helpers/functions/getDataAndSet";
+import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
+import { useToastContext } from "@/app/providers/ToastLoadingProvider";
+import dayjs from "dayjs";
+import { MdArrowDownward, MdArrowUpward } from "react-icons/md";
 
 const TestComponent = ({ testId = 1 }) => {
   const [test, setTest] = useState(null);
@@ -53,7 +59,6 @@ const TestComponent = ({ testId = 1 }) => {
   const [attempts, setAttempts] = useState([]);
   const [currentAttempt, setCurrentAttempt] = useState(null);
   const [questions, setQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -62,192 +67,68 @@ const TestComponent = ({ testId = 1 }) => {
   const [viewMode, setViewMode] = useState("attempts"); // 'attempts', 'test', 'review'
   const [selectedAttemptForReview, setSelectedAttemptForReview] =
     useState(null);
+  const [savingAnswers, setSavingAnswers] = useState([]);
+  const [errorQuestions, setErrorQuestions] = useState([]);
 
-  // Mock API functions
-  const mockAPI = {
-    getTest: async (testId) => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return {
-        id: testId,
-        title: "Advanced JavaScript Concepts",
-        type: "FINAL",
-        attemptLimit: 3,
-        timeLimit: 60, // minutes
-        published: true,
-        certificateApprovedByAdmin: false,
-        course: { id: 1, title: "JavaScript Fundamentals" },
-      };
-    },
+  const examType = "FULLPAGE";
+  const { toastLoading, setToastLoading } = useToastContext();
+  async function getTest() {
+    const req = await getDataAndSet({
+      url: `shared/courses/tests/${testId}`,
+      setLoading,
+      setData: setTest,
+    });
+    return req?.data;
+  }
+  async function getTestQuestions() {
+    const req = await getDataAndSet({
+      url: `shared/courses/tests/${testId}/test-questions`,
+      setData: setQuestions,
+      setLoading,
+    });
+    return req?.data;
+  }
+  async function getUserAttempts() {
+    const req = await getDataAndSet({
+      url: `shared/courses/tests/${testId}/attampts`,
+      setLoading,
+      setData: setAttempts,
+    });
+    return req?.data;
+  }
+  async function createAttempt() {
+    const req = await handleRequestSubmit(
+      {},
+      setToastLoading,
+      `shared/courses/tests/${testId}/attampts`,
+      false,
+      "Creating"
+    );
+    if (req.status === 200) {
+      await getUserAttempts();
+      return req.data;
+    }
+  }
+  async function saveAnswer(attemptId, questionId, answer) {
+    setSavingAnswers((prev) => [...prev, questionId]);
+    const request = await fetch(
+      process.env.NEXT_PUBLIC_URL +
+        "/" +
+        `shared/courses/tests/${testId}/attampts/${attemptId}/questions/${questionId}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ answer }),
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      }
+    );
+    await request.json();
+    if (request.status === 200) {
+      setSavingAnswers((prev) => prev.filter((id) => id !== questionId));
+      setErrorQuestions((prev) => prev.filter((id) => id !== questionId));
+    }
+  }
 
-    getTestQuestions: async (testId) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return [
-        {
-          id: 1,
-          type: "MULTIPLE_CHOICE",
-          question:
-            "What is the difference between `let` and `var` in JavaScript?",
-          order: 1,
-          choices: [
-            {
-              id: 1,
-              text: "Block scope vs function scope",
-              value: "A",
-              isCorrect: true,
-            },
-            { id: 2, text: "No difference", value: "B", isCorrect: false },
-            { id: 3, text: "let is faster", value: "C", isCorrect: false },
-            { id: 4, text: "var is newer", value: "D", isCorrect: false },
-          ],
-        },
-        {
-          id: 2,
-          type: "SINGLE_CHOICE",
-          question:
-            "Which method is used to add elements to the end of an array?",
-          order: 2,
-          choices: [
-            { id: 5, text: "push()", value: "A", isCorrect: true },
-            { id: 6, text: "pop()", value: "B", isCorrect: false },
-            { id: 7, text: "shift()", value: "C", isCorrect: false },
-            { id: 8, text: "unshift()", value: "D", isCorrect: false },
-          ],
-        },
-        {
-          id: 3,
-          type: "TRUE_FALSE",
-          question: "JavaScript is a compiled language.",
-          order: 3,
-          choices: [
-            { id: 9, text: "True", value: "true", isCorrect: false },
-            { id: 10, text: "False", value: "false", isCorrect: true },
-          ],
-        },
-        {
-          id: 4,
-          type: "TEXT",
-          question:
-            "Explain the concept of closures in JavaScript in your own words.",
-          order: 4,
-          choices: [],
-        },
-      ];
-    },
-
-    getUserAttempts: async (userId, testId) => {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      return [
-        {
-          id: 1,
-          userId,
-          testId,
-          score: 75.5,
-          passed: true,
-          attemptCount: 1,
-          attemptLimit: 3,
-          createdAt: new Date("2024-01-15T10:30:00"),
-          startTime: new Date("2024-01-15T10:30:00"),
-          endTime: new Date("2024-01-15T11:15:00"),
-          timePassed: 45,
-          answers: [
-            {
-              id: 1,
-              questionId: 1,
-              selectedAnswers: [{ value: "A" }],
-              textAnswer: null,
-            },
-            {
-              id: 2,
-              questionId: 2,
-              selectedAnswers: [{ value: "A" }],
-              textAnswer: null,
-            },
-            {
-              id: 3,
-              questionId: 3,
-              selectedAnswers: [{ value: "false" }],
-              textAnswer: null,
-            },
-            {
-              id: 4,
-              questionId: 4,
-              selectedAnswers: [],
-              textAnswer:
-                "Closures are functions that have access to variables from their outer scope even after the outer function has returned.",
-            },
-          ],
-        },
-        {
-          id: 2,
-          userId,
-          testId,
-          score: null,
-          passed: false,
-          attemptCount: 2,
-          attemptLimit: 3,
-          createdAt: new Date("2024-01-20T14:00:00"),
-          startTime: new Date("2024-01-20T14:00:00"),
-          endTime: null,
-          timePassed: null,
-          answers: [
-            {
-              id: 5,
-              questionId: 1,
-              selectedAnswers: [{ value: "A" }],
-              textAnswer: null,
-            },
-            {
-              id: 6,
-              questionId: 2,
-              selectedAnswers: [],
-              textAnswer: null,
-            },
-          ],
-        },
-      ];
-    },
-
-    createAttempt: async (userId, testId) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return {
-        id: 3,
-        userId,
-        testId,
-        score: null,
-        passed: false,
-        attemptCount: 3,
-        attemptLimit: 3,
-        createdAt: new Date(),
-        startTime: new Date(),
-        endTime: null,
-        timePassed: null,
-        answers: [],
-      };
-    },
-
-    saveAnswer: async (attemptId, questionId, answer) => {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      return {
-        id: Math.random(),
-        attemptId,
-        questionId,
-        selectedAnswers: answer.selectedAnswers || [],
-        textAnswer: answer.textAnswer || null,
-      };
-    },
-
-    submitAttempt: async (attemptId) => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return {
-        score: 82.5,
-        passed: true,
-        endTime: new Date(),
-        timePassed: 45,
-      };
-    },
-  };
-
-  // Load initial data
   useEffect(() => {
     loadTestData();
   }, [testId, userId]);
@@ -255,23 +136,17 @@ const TestComponent = ({ testId = 1 }) => {
   const loadTestData = async () => {
     setLoading(true);
     try {
-      const [testData, questionsData, attemptsData] = await Promise.all([
-        mockAPI.getTest(testId),
-        mockAPI.getTestQuestions(testId),
-        mockAPI.getUserAttempts(userId, testId),
+      const [test, , attemptsData] = await Promise.all([
+        getTest(),
+        getTestQuestions(),
+        getUserAttempts(),
       ]);
-
-      setTest(testData);
-      setQuestions(questionsData);
-      setAttempts(attemptsData);
-
-      // Check if there's an ongoing attempt
       const ongoingAttempt = attemptsData.find((a) => !a.endTime);
       if (ongoingAttempt) {
         setCurrentAttempt(ongoingAttempt);
         setViewMode("test");
         loadUserAnswers(ongoingAttempt.answers);
-        startTimer(ongoingAttempt);
+        startTimer(ongoingAttempt,test);
       }
     } catch (error) {
       console.error("Error loading test data:", error);
@@ -291,7 +166,7 @@ const TestComponent = ({ testId = 1 }) => {
     setUserAnswers(answersMap);
   };
 
-  const startTimer = (attempt) => {
+  const startTimer = (attempt,test) => {
     if (!test?.timeLimit) return;
 
     const startTime = new Date(attempt.startTime);
@@ -299,24 +174,31 @@ const TestComponent = ({ testId = 1 }) => {
     const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
     const remainingMinutes = test.timeLimit - elapsedMinutes;
 
+
     if (remainingMinutes > 0) {
-      setTimeLeft(remainingMinutes * 60); // Convert to seconds
+      setTimeLeft(remainingMinutes * 60);
       setIsTimerRunning(true);
     } else {
-      // Time's up, auto-submit
-      handleSubmitAttempt();
+      if(attempt){
+
+        handleSubmitAttempt(attempt,test);
+      }
     }
   };
 
-  // Timer effect
   useEffect(() => {
     let interval;
+if(!isTimerRunning||timeLeft===0){
+     if(currentAttempt){
+              handleSubmitAttempt();
+            }
+}
     if (isTimerRunning && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             setIsTimerRunning(false);
-            handleSubmitAttempt();
+        
             return 0;
           }
           return prev - 1;
@@ -324,8 +206,8 @@ const TestComponent = ({ testId = 1 }) => {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isTimerRunning, timeLeft]);
-
+  }, [isTimerRunning, ,currentAttempt]);
+useEffect(()=>{},[])
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -334,11 +216,10 @@ const TestComponent = ({ testId = 1 }) => {
 
   const handleStartNewAttempt = async () => {
     try {
-      const newAttempt = await mockAPI.createAttempt(userId, testId);
+      const newAttempt = await createAttempt();
+      if (!newAttempt) return;
       setCurrentAttempt(newAttempt);
-      setAttempts((prev) => [...prev, newAttempt]);
       setUserAnswers({});
-      setCurrentQuestionIndex(0);
       setViewMode("test");
       setShowNewAttemptDialog(false);
 
@@ -350,197 +231,99 @@ const TestComponent = ({ testId = 1 }) => {
       console.error("Error starting new attempt:", error);
     }
   };
-
   const handleAnswerChange = async (questionId, answer) => {
     const newAnswers = { ...userAnswers, [questionId]: answer };
-    setUserAnswers(newAnswers);
 
+    setUserAnswers(newAnswers);
     if (currentAttempt) {
       try {
-        await mockAPI.saveAnswer(currentAttempt.id, questionId, answer);
+        await saveAnswer(currentAttempt.id, questionId, answer);
       } catch (error) {
         console.error("Error saving answer:", error);
       }
     }
   };
 
-  const handleSubmitAttempt = async () => {
-    if (!currentAttempt) return;
+  const handleSubmitAttempt = async (attempt,preLoadedTest) => {
+const now = new Date();
+const startTime = new Date(!currentAttempt?attempt.startTime:currentAttempt.startTime);
+const timeLimitMs = (!test?preLoadedTest.timeLimit:test.timeLimit) * 60 * 1000; // minutes to ms
+const expireTime = new Date(startTime.getTime() + timeLimitMs);
+
+const isTimeLeft = now < expireTime;
+if (isTimeLeft) {
+    if (savingAnswers?.length > 0) {
+      return;
+    }
+  const unansweredQuestions = questions.filter((q) => !userAnswers[q.id]);
+  const incompleteQuestions = questions.filter((q) => {
+    const answer = userAnswers[q.id];
+    if (!answer) return false;
+    const noText = !answer.textAnswer || answer.textAnswer.trim() === "";
+    const noChoices =
+      !answer.selectedAnswers || answer.selectedAnswers.length === 0;
+    return noText && noChoices;
+  });
+
+  const errorIds = [
+    ...unansweredQuestions.map((q) => q.id),
+    ...incompleteQuestions.map((q) => q.id),
+  ];
+
+  setErrorQuestions(errorIds);
+
+  if (errorIds.length > 0) {
+    const element = document.getElementById(`question-${errorIds[0]}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    return;
+  }
+}
+
+    if (!currentAttempt&&!attempt) return;
 
     try {
       setIsTimerRunning(false);
-      const result = await mockAPI.submitAttempt(currentAttempt.id);
-
-      const updatedAttempt = {
-        ...currentAttempt,
-        score: result.score,
-        passed: result.passed,
-        endTime: result.endTime,
-        timePassed: result.timePassed,
-      };
-
-      setAttempts((prev) =>
-        prev.map((a) => (a.id === currentAttempt.id ? updatedAttempt : a))
+      const req = await handleRequestSubmit(
+        {},
+        setToastLoading,
+        `shared/courses/tests/${testId}/attampts/${!currentAttempt?attempt.id:currentAttempt.id}`,
+        false,
+        "Creating",
+        false,
+        "PUT"
       );
-      setCurrentAttempt(null);
-      setViewMode("attempts");
-      setUserAnswers({});
-      setTimeLeft(0);
+      if (req.status === 200) {
+        await getUserAttempts();
+        setViewMode("attempts");
+        setUserAnswers({});
+        setCurrentAttempt(null);
+        setTimeLeft(0);
+      }
     } catch (error) {
       console.error("Error submitting attempt:", error);
     }
   };
+const lastAttempt = attempts?.length ? attempts[attempts.length - 1] : null;
+const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptLimit):0;
 
   const canStartNewAttempt = () => {
     if (!test) return false;
     const completedAttempts = attempts.filter((a) => a.endTime).length;
     const ongoingAttempt = attempts.find((a) => !a.endTime);
-    return completedAttempts < test.attemptLimit && !ongoingAttempt;
+ 
+    return !attempts||attempts.length===0|| (completedAttempts < attemptLimit&& !ongoingAttempt);
   };
 
-  const renderQuestionContent = (
-    question,
-    isReview = false,
-    reviewAnswers = null
-  ) => {
-    const currentAnswer = isReview
-      ? reviewAnswers?.[question.id]
-      : userAnswers[question.id];
+  const isAttemptExpired = (attempt, test) => {
+    if (attempt.endTime) return true;
 
-    const handleChange = (answer) => {
-      if (!isReview) {
-        handleAnswerChange(question.id, answer);
-      }
-    };
+    const startTime = new Date(attempt.startTime).getTime(); // ms
+    const now = Date.now(); // ms
+    const elapsedMinutes = (now - startTime) / 1000 / 60;
 
-    switch (question.type) {
-      case "MULTIPLE_CHOICE":
-        return (
-          <FormControl component="fieldset" fullWidth disabled={isReview}>
-            <FormLabel component="legend">Select all that apply:</FormLabel>
-            <FormGroup>
-              {question.choices.map((choice) => (
-                <FormControlLabel
-                  key={choice.id}
-                  control={
-                    <Checkbox
-                      checked={
-                        currentAnswer?.selectedAnswers?.includes(
-                          choice.value
-                        ) || false
-                      }
-                      onChange={(e) => {
-                        const current = currentAnswer?.selectedAnswers || [];
-                        const newSelected = e.target.checked
-                          ? [...current, choice.value]
-                          : current.filter((v) => v !== choice.value);
-                        handleChange({ selectedAnswers: newSelected });
-                      }}
-                    />
-                  }
-                  label={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      {choice.text}
-                      {isReview && choice.isCorrect && (
-                        <FaCheck color="green" />
-                      )}
-                      {isReview &&
-                        !choice.isCorrect &&
-                        currentAnswer?.selectedAnswers?.includes(
-                          choice.value
-                        ) && <FaTimes color="red" />}
-                    </Box>
-                  }
-                />
-              ))}
-            </FormGroup>
-          </FormControl>
-        );
-
-      case "SINGLE_CHOICE":
-        return (
-          <FormControl component="fieldset" fullWidth disabled={isReview}>
-            <FormLabel component="legend">Select one:</FormLabel>
-            <RadioGroup
-              value={currentAnswer?.selectedAnswers?.[0] || ""}
-              onChange={(e) =>
-                handleChange({ selectedAnswers: [e.target.value] })
-              }
-            >
-              {question.choices.map((choice) => (
-                <FormControlLabel
-                  key={choice.id}
-                  value={choice.value}
-                  control={<Radio />}
-                  label={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      {choice.text}
-                      {isReview && choice.isCorrect && (
-                        <FaCheck color="green" />
-                      )}
-                      {isReview &&
-                        !choice.isCorrect &&
-                        currentAnswer?.selectedAnswers?.includes(
-                          choice.value
-                        ) && <FaTimes color="red" />}
-                    </Box>
-                  }
-                />
-              ))}
-            </RadioGroup>
-          </FormControl>
-        );
-
-      case "TRUE_FALSE":
-        return (
-          <FormControl component="fieldset" fullWidth disabled={isReview}>
-            <FormLabel component="legend">True or False:</FormLabel>
-            <RadioGroup
-              value={currentAnswer?.selectedAnswers?.[0] || ""}
-              onChange={(e) =>
-                handleChange({ selectedAnswers: [e.target.value] })
-              }
-            >
-              {question.choices.map((choice) => (
-                <FormControlLabel
-                  key={choice.id}
-                  value={choice.value}
-                  control={<Radio />}
-                  label={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      {choice.text}
-                      {isReview && choice.isCorrect && (
-                        <FaCheck color="green" />
-                      )}
-                      {isReview &&
-                        !choice.isCorrect &&
-                        currentAnswer?.selectedAnswers?.includes(
-                          choice.value
-                        ) && <FaTimes color="red" />}
-                    </Box>
-                  }
-                />
-              ))}
-            </RadioGroup>
-          </FormControl>
-        );
-
-      case "TEXT":
-        return (
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            value={currentAnswer?.textAnswer || ""}
-            onChange={(e) => handleChange({ textAnswer: e.target.value })}
-            placeholder="Enter your answer here..."
-            disabled={isReview}
-          />
-        );
-
-      default:
-        return null;
-    }
+    return elapsedMinutes >= test.timeLimit;
   };
 
   const renderAttemptsList = () => (
@@ -576,7 +359,7 @@ const TestComponent = ({ testId = 1 }) => {
               <ListItem>
                 <ListItemText
                   primary={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2,flexWrap:"wrap" }}>
                       <Typography variant="h6">
                         Attempt {attempt.attemptCount}
                       </Typography>
@@ -597,39 +380,27 @@ const TestComponent = ({ testId = 1 }) => {
                   }
                   secondary={
                     <Box sx={{ mt: 1 }}>
-                      <Typography variant="body2">
-                        Started: {new Date(attempt.startTime).toLocaleString()}
-                      </Typography>
-                      {attempt.endTime && (
-                        <>
-                          <Typography variant="body2">
-                            Completed:{" "}
-                            {new Date(attempt.endTime).toLocaleString()}
-                          </Typography>
-                          <Typography variant="body2">
-                            Score: {attempt.score}% | Time: {attempt.timePassed}{" "}
-                            minutes
-                          </Typography>
-                        </>
-                      )}
+                         <Box sx={{ mt: 1 }}>
+                                            <Typography variant="body2">
+                      Started: {dayjs(attempt.startTime).format("DD/MM/YYYY - HH:mm")}
+                                            </Typography>
+                                            {attempt.endTime && (
+                                              <>
+                                                <Typography variant="body2">
+                                                  Completed:{" "}
+                                                 {dayjs(attempt.endTime).format("DD/MM/YYYY - HH:mm")}
+                                                </Typography>
+                                                <Typography variant="body2">
+                                                  Score: {attempt.score}%
+                                                </Typography>
+                                              </>
+                                            )}
+                                          </Box>
                     </Box>
                   }
                 />
                 <Box sx={{ display: "flex", gap: 1 }}>
-                  {!attempt.endTime ? (
-                    <Button
-                      variant="contained"
-                      startIcon={<FaEdit />}
-                      onClick={() => {
-                        setCurrentAttempt(attempt);
-                        setViewMode("test");
-                        loadUserAnswers(attempt.answers);
-                        startTimer(attempt);
-                      }}
-                    >
-                      Continue
-                    </Button>
-                  ) : (
+                  {isAttemptExpired(attempt, test) ? (
                     <Button
                       variant="outlined"
                       startIcon={<FaEye />}
@@ -639,6 +410,19 @@ const TestComponent = ({ testId = 1 }) => {
                       }}
                     >
                       Review
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      startIcon={<FaEdit />}
+                      onClick={() => {
+                        setCurrentAttempt(attempt);
+                        setViewMode("test");
+                        loadUserAnswers(attempt.answers);
+                        startTimer(attempt,test);
+                      }}
+                    >
+                      Continue
                     </Button>
                   )}
                 </Box>
@@ -650,15 +434,11 @@ const TestComponent = ({ testId = 1 }) => {
     </Box>
   );
 
-  const renderTestView = () => {
+  const renderAllQuestionsView = () => {
     if (!questions.length) return null;
-
-    const currentQuestion = questions[currentQuestionIndex];
-    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
     return (
       <Box>
-        {/* Header */}
         <Box
           sx={{
             display: "flex",
@@ -686,97 +466,95 @@ const TestComponent = ({ testId = 1 }) => {
           )}
         </Box>
 
-        {/* Progress */}
         <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-            <Typography variant="body2">
-              Question {currentQuestionIndex + 1} of {questions.length}
-            </Typography>
-            <Typography variant="body2">
-              {Math.round(progress)}% Complete
-            </Typography>
-          </Box>
-          <LinearProgress variant="determinate" value={progress} />
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Answer all questions below and click Submit when ready
+          </Typography>
+          <LinearProgress variant="determinate" value={100} />
         </Box>
 
-        {/* Question Stepper */}
-        <Box sx={{ mb: 3 }}>
-          <Stepper nonLinear activeStep={currentQuestionIndex}>
-            {questions.map((question, index) => (
-              <Step key={question.id}>
-                <StepButton
-                  onClick={() => setCurrentQuestionIndex(index)}
-                  completed={userAnswers[question.id] !== undefined}
+        {questions.map((question, index) => {
+          const isSavingThisQuestion = savingAnswers?.includes(question.id);
+          const isError = errorQuestions.includes(question.id);
+
+          return (
+            <Card
+              key={question.id}
+              id={`question-${question.id}`}
+              sx={{
+                position: "relative",
+                mb: 3,
+
+                border: isError
+                  ? "2px solid"
+                  : isSavingThisQuestion
+                  ? "2px solid"
+                  : "1px solid",
+                borderColor: isError
+                  ? "error.main"
+                  : isSavingThisQuestion
+                  ? "primary.main"
+                  : "divider",
+                animation: isSavingThisQuestion
+                  ? "pulse 1.5s infinite"
+                  : "none",
+                "@keyframes pulse": {
+                  "0%": { borderColor: "primary.main" },
+                  "50%": { borderColor: "primary.light" },
+                  "100%": { borderColor: "primary.main" },
+                },
+              }}
+            >
+              {isSavingThisQuestion && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    zIndex: 1,
+                  }}
                 >
-                  {index + 1}
-                </StepButton>
-              </Step>
-            ))}
-          </Stepper>
-        </Box>
+                  <CircularProgress size={20} />
+                </Box>
+              )}
+              <CardContent>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+                >
+                  <FaQuestionCircle />
+                  <Typography variant="h6">Question {index + 1}</Typography>
+                  <Chip
+                    label={question.type.replace("_", " ")}
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+                <Typography variant="body1" sx={{ mb: 3 }}>
+                  {question.question}
+                </Typography>
+                <RenderQuestionContent
+                  question={question}
+                  handleAnswerChange={handleAnswerChange}
+                  userAnswers={userAnswers}
+                  savingAnswers={savingAnswers} attempts={attempts}
+                test={test}
+                />{" "}
+              </CardContent>
+            </Card>
+          );
+        })}
 
-        {/* Current Question */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-              <FaQuestionCircle />
-              <Typography variant="h6">
-                Question {currentQuestionIndex + 1}
-              </Typography>
-              <Chip
-                label={currentQuestion.type.replace("_", " ")}
-                size="small"
-                variant="outlined"
-              />
-            </Box>
-            <Typography variant="body1" sx={{ mb: 3 }}>
-              {currentQuestion.question}
-            </Typography>
-            {renderQuestionContent(currentQuestion)}
-          </CardContent>
-        </Card>
-
-        {/* Navigation */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <Button
-            startIcon={<FaArrowLeft />}
-            onClick={() =>
-              setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))
-            }
-            disabled={currentQuestionIndex === 0}
+            variant="contained"
+            color="success"
+            size="large"
+            startIcon={<FaCheck />}
+            disabled={savingAnswers?.length > 0}
+            onClick={handleSubmitAttempt}
           >
-            Previous
+            Submit Test
           </Button>
-
-          <Box sx={{ display: "flex", gap: 2 }}>
-            {currentQuestionIndex === questions.length - 1 ? (
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<FaCheck />}
-                onClick={handleSubmitAttempt}
-              >
-                Submit Test
-              </Button>
-            ) : (
-              <Button
-                endIcon={<FaArrowRight />}
-                onClick={() =>
-                  setCurrentQuestionIndex(
-                    Math.min(questions.length - 1, currentQuestionIndex + 1)
-                  )
-                }
-              >
-                Next
-              </Button>
-            )}
-          </Box>
         </Box>
       </Box>
     );
@@ -836,7 +614,14 @@ const TestComponent = ({ testId = 1 }) => {
               <Typography variant="body1" sx={{ mb: 3 }}>
                 {question.question}
               </Typography>
-              {renderQuestionContent(question, true, reviewAnswers)}
+              <RenderQuestionContent
+                question={question}
+                isReview={true}
+                reviewAnswers={reviewAnswers}
+                userAnswers={userAnswers}
+                attempts={attempts}
+                test={test}
+              />
             </CardContent>
           </Card>
         ))}
@@ -874,10 +659,10 @@ const TestComponent = ({ testId = 1 }) => {
         <Typography variant="h4" gutterBottom>
           {test.title}
         </Typography>
-        <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+        <Box sx={{ display: "flex", gap: 2, mb: 2,flexWrap:"wrap" }}>
           <Chip label={test.type} variant="outlined" />
           <Chip
-            label={`${test.attemptLimit} attempts allowed`}
+            label={`${attemptLimit} attempts allowed`}
             variant="outlined"
           />
           {test.timeLimit && (
@@ -885,16 +670,18 @@ const TestComponent = ({ testId = 1 }) => {
           )}
         </Box>
         <Typography variant="body1" color="text.secondary">
-          Course: {test.course?.title}
+          {test.course
+            ? `Course: ${test.course?.title}`
+            : `Lesson: ${test.lesson?.title}`}
         </Typography>
       </Paper>
 
-      {/* Main Content */}
       {viewMode === "attempts" && renderAttemptsList()}
-      {viewMode === "test" && renderTestView()}
+      {viewMode === "test" &&
+        examType === "FULLPAGE" &&
+        renderAllQuestionsView()}
       {viewMode === "review" && renderReviewView()}
 
-      {/* New Attempt Dialog */}
       <Dialog
         open={showNewAttemptDialog}
         onClose={() => setShowNewAttemptDialog(false)}
@@ -922,4 +709,321 @@ const TestComponent = ({ testId = 1 }) => {
   );
 };
 
+
+const RenderQuestionContent = ({
+  question,
+  isReview = false,
+  reviewAnswers = null,
+  handleAnswerChange,
+  userAnswers,
+  attempts,
+}) => {
+  const currentAnswer = isReview
+    ? reviewAnswers?.[question.id]
+    : userAnswers[question.id];
+    let [saved,setSaved]=useState(false)
+  const handleChange = (answer) => {
+    if (!isReview) {
+      handleAnswerChange(question.id, answer);
+    }
+  };
+
+  const getOrderedChoices = () => {
+    if (currentAnswer?.selectedAnswers && currentAnswer.selectedAnswers.length > 0) {
+      const orderedChoices = [];
+      currentAnswer.selectedAnswers.forEach(answerText => {
+        const choice = question.choices.find(c => c.text === answerText);
+        if (choice) {
+          orderedChoices.push(choice);
+        }
+      });
+      
+      question.choices.forEach(choice => {
+        if (!orderedChoices.find(oc => oc.id === choice.id)) {
+          orderedChoices.push(choice);
+        }
+      });
+      
+      return orderedChoices;
+    } else if(!isReview){
+      const newChoices=[...question.choices].sort(() => Math.random() - 0.5)
+      if(!saved){
+
+        handleChange({ selectedAnswers: newChoices.map((c) => c.text) });
+       setSaved(true) 
+      }
+    return newChoices;
+    }{
+      return [...question.choices].sort((a, b) => (a.order || 0) - (b.order || 0));
+    }
+  };
+
+  const moveChoice = (currentIndex, direction) => {
+    const orderedChoices = getOrderedChoices();
+    const newChoices = [...orderedChoices];
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    
+    if (targetIndex < 0 || targetIndex >= newChoices.length) return;
+
+    // Swap the choices
+    [newChoices[currentIndex], newChoices[targetIndex]] = [
+      newChoices[targetIndex],
+      newChoices[currentIndex]
+    ];
+
+    // Save the new order
+    handleChange({ selectedAnswers: newChoices.map((c) => c.text) });
+  };
+
+  const [localText, setLocalText] = useState(currentAnswer?.textAnswer || "");
+  const debouncedSave = useCallback(
+    debounce((value) => {
+      handleChange({ textAnswer: value });
+    }, 500),
+    [userAnswers]
+  );
+
+  const handleLocalChange = (e) => {
+    setLocalText(e.target.value);
+    debouncedSave(e.target.value);
+  };
+
+  switch (question.type) {
+    case "MULTIPLE_CHOICE":
+      return (
+        <FormControl component="fieldset" fullWidth disabled={isReview}>
+          <FormLabel component="legend">Select all that apply:</FormLabel>
+          <FormGroup>
+            {question.choices.map((choice) => (
+              <FormControlLabel
+                key={choice.id}
+                control={
+                  <Checkbox
+                    checked={
+                      currentAnswer?.selectedAnswers?.includes(choice.text) ||
+                      false
+                    }
+                    onChange={(e) => {
+                      const current = currentAnswer?.selectedAnswers || [];
+                      const newSelected = e.target.checked
+                        ? [...current, choice.text]
+                        : current.filter((v) => v !== choice.text);
+                      handleChange({ selectedAnswers: newSelected });
+                    }}
+                  />
+                }
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {choice.text}
+                    {attempts && attempts.find((attempt)=>attempt.passed) && (
+                      <>
+                        {isReview && choice.isCorrect && <FaCheck color="green" />}
+                        {isReview &&
+                          !choice.isCorrect &&
+                          currentAnswer?.selectedAnswers?.includes(choice.text) && (
+                            <FaTimes color="red" />
+                          )}
+                      </>
+                    )}
+                  </Box>
+                }
+              />
+            ))}
+          </FormGroup>
+        </FormControl>
+      );
+
+    case "SINGLE_CHOICE":
+      return (
+        <FormControl component="fieldset" fullWidth disabled={isReview}>
+          <FormLabel component="legend">Select one:</FormLabel>
+          <RadioGroup
+            value={currentAnswer?.selectedAnswers?.[0] || ""}
+            onChange={(e) =>
+              handleChange({ selectedAnswers: [e.target.value] })
+            }
+          >
+            {question.choices.map((choice) => (
+              <FormControlLabel
+                key={choice.id}
+                value={choice.text}
+                control={<Radio />}
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {choice.text}
+                    {attempts && attempts.find((attempt)=>attempt.passed) && (
+                      <>
+                        {isReview && choice.isCorrect && <FaCheck color="green" />}
+                        {isReview &&
+                          !choice.isCorrect &&
+                          currentAnswer?.selectedAnswers?.includes(choice.text) && (
+                            <FaTimes color="red" />
+                          )}
+                      </>
+                    )}
+                  </Box>
+                }
+              />
+            ))}
+          </RadioGroup>
+        </FormControl>
+      );
+
+    case "TRUE_FALSE":
+      return (
+        <FormControl component="fieldset" fullWidth disabled={isReview}>
+          <FormLabel component="legend">True or False:</FormLabel>
+          <RadioGroup
+            value={currentAnswer?.selectedAnswers?.[0] || ""}
+            onChange={(e) =>
+              handleChange({ selectedAnswers: [e.target.value] })
+            }
+          >
+            {question.choices.map((choice) => (
+              <FormControlLabel
+                key={choice.id}
+                value={choice.text}
+                control={<Radio />}
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {choice.text}
+                    {attempts && attempts.find((attempt)=>attempt.passed) && (
+                      <>
+                        {isReview && choice.isCorrect && <FaCheck color="green" />}
+                        {isReview &&
+                          !choice.isCorrect &&
+                          currentAnswer?.selectedAnswers?.includes(choice.text) && (
+                            <FaTimes color="red" />
+                          )}
+                      </>
+                    )}
+                  </Box>
+                }
+              />
+            ))}
+          </RadioGroup>
+        </FormControl>
+      );
+
+    case "TEXT":
+      return (
+        <TextField
+          fullWidth
+          multiline
+          rows={4}
+          value={localText}
+          onChange={handleLocalChange}
+          placeholder="Enter your answer here..."
+          disabled={isReview}
+        />
+      );
+
+    case "ORDERING":
+      const orderedChoices = getOrderedChoices();
+      
+      return (
+ <FormControl component="fieldset" fullWidth disabled={isReview}>
+          <FormLabel component="legend">
+          Use arrows to reorder items from first to last:
+          </FormLabel>
+          <Box sx={{ mt: 2 }}>
+            {orderedChoices.map((choice, index) => (
+              <Paper
+                key={choice.id}
+                elevation={1}
+                sx={{
+                  p: 2,
+                  mb: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  backgroundColor: "background.paper"
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      minWidth: 24,
+                      height: 24,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "primary.main",
+                      color: "primary.contrastText",
+                      borderRadius: "50%",
+                      fontSize: "0.75rem",
+                      fontWeight: "bold"
+                    }}
+                  >
+                    {index + 1}
+                  </Typography>
+                  <Typography variant="body1">{choice.text}</Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                  {attempts && attempts.find((attempt)=>attempt.passed) && isReview ? (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          minWidth: 24,
+                          height: 24,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "success.main",
+                          color: "success.contrastText",
+                          borderRadius: "50%",
+                          fontSize: "0.75rem",
+                          fontWeight: "bold"
+                        }}
+                      >
+                        {(choice.order)}
+                      </Typography>
+                      {index+1 === (choice.order || 0) ? (
+                        <FaCheck color="green" />
+                      ) : (
+                        <FaTimes color="red" />
+                      )}
+                    </Box>
+                  ) : (
+                    // Show move buttons in active mode
+                    !isReview && (
+                      <Box sx={{ display: "flex", flexDirection: "column" }}>
+                        <IconButton
+                          onClick={() => moveChoice(index, "up")}
+                          disabled={index === 0}
+                          sx={{ p: 1, mb: 1 }}
+                          size="large"
+                        >
+                          <MdArrowUpward size={16} />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => moveChoice(index, "down")}
+                          disabled={index === orderedChoices.length - 1}
+                          sx={{ p: 1, mb: 1 }}
+                          size="large"
+                        >
+                          <MdArrowDownward size={16} />
+                        </IconButton>
+                      </Box>
+                    )
+                  )}
+                </Box>
+              </Paper>
+            ))}
+          </Box>
+          
+  
+        </FormControl>
+      );
+
+    default:
+      return null;
+  }
+};
 export default TestComponent;

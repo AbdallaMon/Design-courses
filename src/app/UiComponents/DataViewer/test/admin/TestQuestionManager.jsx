@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -43,6 +43,8 @@ import {
   MdExpandMore as ExpandMoreIcon,
   MdArrowUpward as ArrowUpIcon,
   MdArrowDownward as ArrowDownIcon,
+  MdArrowUpward,
+  MdArrowDownward,
 } from "react-icons/md";
 import { QuestionTypes } from "@/app/helpers/constants";
 import { getDataAndSet } from "@/app/helpers/functions/getDataAndSet";
@@ -70,31 +72,30 @@ const TestQuestionManager = ({ testId }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Debounce question text
-
-  async function getQuestions() {
+  // Memoize the getQuestions function to prevent unnecessary re-renders
+  const getQuestions = useCallback(async () => {
     await getDataAndSet({
       url: `admin/courses/tests/${testId}`,
       setLoading,
       setData: setQuestions,
     });
-  }
+  }, [testId]);
 
   useEffect(() => {
     getQuestions();
-  }, [testId]);
+  }, [getQuestions]);
 
-  // Initialize empty choice
-  const createEmptyChoice = () => ({
+  // Memoize createEmptyChoice to prevent recreation on every render
+  const createEmptyChoice = useCallback(() => ({
     id: Date.now() + Math.random(),
     text: "",
     value: "",
     isCorrect: false,
     type: "CREATE",
-  });
+  }), []);
 
-  // Handle question type change
-  const handleTypeChange = (type) => {
+  // Optimize handleTypeChange with useCallback
+  const handleTypeChange = useCallback((type) => {
     let choices = [];
 
     if (
@@ -114,18 +115,18 @@ const TestQuestionManager = ({ testId }) => {
       question: "",
       choices,
     });
-  };
+  }, [createEmptyChoice]);
 
-  // Add new choice
-  const addChoice = () => {
+  // Optimize addChoice with useCallback
+  const addChoice = useCallback(() => {
     setNewQuestion((prev) => ({
       ...prev,
       choices: [...prev.choices, createEmptyChoice()],
     }));
-  };
+  }, [createEmptyChoice]);
 
-  // Update choice
-  const updateChoice = (choiceId, field, value) => {
+  // Optimize updateChoice with useCallback
+  const updateChoice = useCallback((choiceId, field, value) => {
     setNewQuestion((prev) => ({
       ...prev,
       choices: prev.choices.map((choice) =>
@@ -138,36 +139,58 @@ const TestQuestionManager = ({ testId }) => {
           : choice
       ),
     }));
-  };
+  }, []);
 
-  // Remove choice
-  const removeChoice = (choiceId) => {
+  // Optimize moveChoice with useCallback
+  const moveChoice = useCallback((choiceId, direction) => {
+    setNewQuestion((prev) => {
+      const choices = [...prev.choices];
+      const index = choices.findIndex((c) => c.id === choiceId);
+      if (index === -1) return prev;
+
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= choices.length) return prev;
+
+      [choices[index], choices[targetIndex]] = [choices[targetIndex], choices[index]];
+
+      const updatedChoices = choices.map((c, idx) => ({
+        ...c,
+        order: idx + 1,
+      }));
+
+      return {
+        ...prev,
+        choices: updatedChoices,
+      };
+    });
+  }, []);
+
+  // Optimize removeChoice with useCallback
+  const removeChoice = useCallback((choiceId) => {
     setNewQuestion((prev) => {
       return {
         ...prev,
         choices: prev.choices.filter((choice) => choice.id !== choiceId),
       };
     });
-  };
+  }, []);
 
-  // Validate question
-  const validateQuestion = (question) => {
+  // Optimize validateQuestion with useCallback
+  const validateQuestion = useCallback((question) => {
     if (!question.question.trim()) return "Question text is required";
     if (!question.type) return "Question type is required";
-
     if (question.type !== QuestionTypes.TEXT) {
       if (question.choices.length < 2) return "At least 2 choices are required";
       if (question.choices.some((c) => !c.text.trim()))
         return "All choices must have text";
-      if (!question.choices.some((c) => c.isCorrect))
+      if (!question.choices.some((c) => c.isCorrect||c.order))
         return "At least one correct answer is required";
     }
 
     return null;
-  };
+  }, []);
 
-  // Save question
-  const saveQuestion = async () => {
+  const saveQuestion = useCallback(async () => {
     const validation = validateQuestion(newQuestion);
     if (validation) {
       setAlertError(validation);
@@ -188,10 +211,10 @@ const TestQuestionManager = ({ testId }) => {
       setIsCreating(false);
       await getQuestions();
     }
-  };
+  }, [newQuestion, validateQuestion, setAlertError, setToastLoading, testId, getQuestions]);
 
   // Delete question
-  const deleteQuestion = async (questionId) => {
+  const deleteQuestion = useCallback(async (questionId) => {
     const req = await handleRequestSubmit(
       {},
       setToastLoading,
@@ -205,10 +228,10 @@ const TestQuestionManager = ({ testId }) => {
       setQuestions((prev) => prev.filter((q) => q.id !== questionId));
       setDeleteDialog({ open: false, questionId: null });
     }
-  };
+  }, [setToastLoading, testId]);
 
   // Move question up/down
-  const moveQuestion = async (questionId, direction) => {
+  const moveQuestion = useCallback(async (questionId, direction) => {
     const currentIndex = questions.findIndex((q) => q.id === questionId);
     const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
 
@@ -221,8 +244,9 @@ const TestQuestionManager = ({ testId }) => {
     ];
     setReorder(true);
     setQuestions(newQuestions);
-  };
-  async function saveReOrdering() {
+  }, [questions]);
+
+  const saveReOrdering = useCallback(async () => {
     const req = await handleRequestSubmit(
       questions,
       setToastLoading,
@@ -233,9 +257,15 @@ const TestQuestionManager = ({ testId }) => {
     if (req.status === 200) {
       setReorder(false);
     }
-  }
+  }, [questions, setToastLoading, testId]);
+
+  // Optimize question text update
+  const updateQuestionText = useCallback((value) => {
+    setNewQuestion((prev) => ({ ...prev, question: value }));
+  }, []);
+
   // Render question type selector
-  const renderTypeSelector = () => (
+  const renderTypeSelector = useMemo(() => (
     <FormControl fullWidth margin="normal">
       <InputLabel>Question Type</InputLabel>
       <Select
@@ -249,12 +279,13 @@ const TestQuestionManager = ({ testId }) => {
         <MenuItem value={QuestionTypes.SINGLE_CHOICE}>Single Choice</MenuItem>
         <MenuItem value={QuestionTypes.TRUE_FALSE}>True/False</MenuItem>
         <MenuItem value={QuestionTypes.TEXT}>Text Answer</MenuItem>
+        <MenuItem value={QuestionTypes.ORDERING}>Ordering</MenuItem>
       </Select>
     </FormControl>
-  );
+  ), [newQuestion.type, handleTypeChange]);
 
   // Render choices editor
-  const renderChoicesEditor = () => {
+  const renderChoicesEditor = useMemo(() => {
     if (newQuestion.type === QuestionTypes.TEXT) return null;
 
     return (
@@ -264,62 +295,16 @@ const TestQuestionManager = ({ testId }) => {
         </Typography>
 
         {newQuestion.choices.map((choice, index) => (
-          <Card key={choice.id} sx={{ mb: 2 }}>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <TextField
-                  fullWidth
-                  label={`Choice ${index + 1}`}
-                  value={choice.text}
-                  onChange={(e) =>
-                    updateChoice(choice.id, "text", e.target.value)
-                  }
-                  disabled={newQuestion.type === QuestionTypes.TRUE_FALSE}
-                />
-
-                {newQuestion.type === QuestionTypes.MULTIPLE_CHOICE ? (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={choice.isCorrect}
-                        onChange={(e) =>
-                          updateChoice(
-                            choice.id,
-                            "isCorrect",
-                            e.target.checked,
-                            newQuestion.type === QuestionTypes.TRUE_FALSE
-                          )
-                        }
-                      />
-                    }
-                    label="Correct"
-                  />
-                ) : (
-                  <FormControlLabel
-                    control={
-                      <Radio
-                        checked={choice.isCorrect}
-                        onChange={() =>
-                          updateChoice(choice.id, "isCorrect", true)
-                        }
-                      />
-                    }
-                    label="Correct"
-                  />
-                )}
-
-                {newQuestion.type !== QuestionTypes.TRUE_FALSE &&
-                  newQuestion.choices.length > 2 && (
-                    <IconButton
-                      onClick={() => removeChoice(choice.id)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  )}
-              </Box>
-            </CardContent>
-          </Card>
+          <ChoiceEditor
+            key={choice.id}
+            choice={choice}
+            index={index}
+            questionType={newQuestion.type}
+            onUpdate={updateChoice}
+            onRemove={removeChoice}
+            onMove={moveChoice}
+            canRemove={newQuestion.choices.length > 2}
+          />
         ))}
 
         {newQuestion.type !== QuestionTypes.TRUE_FALSE && (
@@ -334,16 +319,15 @@ const TestQuestionManager = ({ testId }) => {
         )}
       </Box>
     );
-  };
+  }, [newQuestion.type, newQuestion.choices, updateChoice, removeChoice, moveChoice, addChoice]);
 
-  // Render question creator
-  const renderQuestionCreator = () => (
+  const renderQuestionCreator = useMemo(() => (
     <Paper sx={{ p: 3, mb: 3 }}>
       <Typography variant="h6" gutterBottom>
         Create New Question
       </Typography>
 
-      {renderTypeSelector()}
+      {renderTypeSelector}
 
       {newQuestion.type && (
         <>
@@ -353,14 +337,12 @@ const TestQuestionManager = ({ testId }) => {
             rows={3}
             label="Question"
             value={newQuestion.question}
-            onChange={(e) =>
-              setNewQuestion((prev) => ({ ...prev, question: e.target.value }))
-            }
+            onChange={(e) => updateQuestionText(e.target.value)}
             margin="normal"
             placeholder="Enter your question here..."
           />
 
-          {renderChoicesEditor()}
+          {renderChoicesEditor}
 
           <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
             <Button
@@ -385,7 +367,7 @@ const TestQuestionManager = ({ testId }) => {
         </>
       )}
     </Paper>
-  );
+  ), [newQuestion, renderTypeSelector, renderChoicesEditor, updateQuestionText, saveQuestion, loading]);
 
   return (
     <Container maxWidth="lg">
@@ -424,7 +406,7 @@ const TestQuestionManager = ({ testId }) => {
       )}
 
       {/* Question Creator */}
-      {isCreating && renderQuestionCreator()}
+      {isCreating && renderQuestionCreator}
 
       {/* Saved Questions */}
       {questions.length > 0 && (
@@ -488,14 +470,106 @@ const TestQuestionManager = ({ testId }) => {
   );
 };
 
-function SavedQuestion({
+// Optimized ChoiceEditor component to prevent unnecessary re-renders
+const ChoiceEditor = React.memo(({ 
+  choice, 
+  index, 
+  questionType, 
+  onUpdate, 
+  onRemove, 
+  onMove, 
+  canRemove 
+}) => {
+  const handleTextChange = useCallback((e) => {
+    onUpdate(choice.id, "text", e.target.value);
+  }, [choice.id, onUpdate]);
+
+  const handleCorrectChange = useCallback((e) => {
+    onUpdate(choice.id, "isCorrect", e.target.checked);
+  }, [choice.id, onUpdate]);
+
+  const handleRadioChange = useCallback(() => {
+    onUpdate(choice.id, "isCorrect", true);
+  }, [choice.id, onUpdate]);
+
+  const handleRemove = useCallback(() => {
+    onRemove(choice.id);
+  }, [choice.id, onRemove]);
+
+  const handleMoveUp = useCallback(() => {
+    onMove(choice.id, "up");
+  }, [choice.id, onMove]);
+
+  const handleMoveDown = useCallback(() => {
+    onMove(choice.id, "down");
+  }, [choice.id, onMove]);
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <TextField
+            fullWidth
+            label={`Choice ${index + 1}`}
+            value={choice.text}
+            onChange={handleTextChange}
+            disabled={questionType === QuestionTypes.TRUE_FALSE}
+          />
+
+          {questionType === QuestionTypes.MULTIPLE_CHOICE ? (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={choice.isCorrect}
+                  onChange={handleCorrectChange}
+                />
+              }
+              label="Correct"
+            />
+          ) : questionType === QuestionTypes.ORDERING ? (
+            <>
+              <IconButton onClick={handleMoveUp}>
+                <MdArrowUpward />
+              </IconButton>
+              <IconButton onClick={handleMoveDown}>
+                <MdArrowDownward />
+              </IconButton>
+            </>
+          ) : (
+            <FormControlLabel
+              control={
+                <Radio
+                  checked={choice.isCorrect}
+                  onChange={handleRadioChange}
+                />
+              }
+              label="Correct"
+            />
+          )}
+
+          {questionType !== QuestionTypes.TRUE_FALSE && canRemove && (
+            <IconButton
+              onClick={handleRemove}
+              color="error"
+            >
+              <DeleteIcon />
+            </IconButton>
+          )}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+});
+
+// Optimized SavedQuestion component
+const SavedQuestion = React.memo(({
   questionId,
   testId,
   questions,
   index,
   moveQuestion,
   setDeleteDialog,
-}) {
+}) => {
   const [question, setQuestion] = useState({});
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -507,29 +581,50 @@ function SavedQuestion({
   const { setAlertError } = useAlertContext();
   const { setToastLoading } = useToastContext();
 
-  async function getQuestion() {
+  const getQuestion = useCallback(async () => {
     await getDataAndSet({
       url: `admin/courses/tests/${testId}/test-questions/${questionId}`,
       setLoading,
       setData: setQuestion,
     });
-  }
+  }, [testId, questionId]);
 
   useEffect(() => {
     getQuestion();
-  }, [questionId]);
+  }, [getQuestion]);
 
-  // Initialize empty choice for editing
-  const createEmptyChoice = () => ({
+  const moveChoice = useCallback((choiceId, direction) => {
+    setEditedQuestion((prev) => {
+      const choices = [...prev.choices];
+      const index = choices.findIndex((c) => c.id === choiceId);
+      if (index === -1) return prev;
+
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= choices.length) return prev;
+
+      [choices[index], choices[targetIndex]] = [choices[targetIndex], choices[index]];
+
+      const updatedChoices = choices.map((c, idx) => ({
+        ...c,
+        order: idx + 1,
+      }));
+
+      return {
+        ...prev,
+        choices: updatedChoices,
+      };
+    });
+  }, []);
+
+  const createEmptyChoice = useCallback(() => ({
     id: Date.now() + Math.random(),
     text: "",
     value: "",
     isCorrect: false,
     type: "CREATE",
-  });
+  }), []);
 
-  // Start editing
-  const startEdit = () => {
+  const startEdit = useCallback(() => {
     setEditedQuestion({
       type: question.type,
       question: question.question,
@@ -540,24 +635,21 @@ function SavedQuestion({
         })) || [],
     });
     setIsEditing(true);
-  };
+  }, [question]);
 
-  // Cancel editing
-  const cancelEdit = () => {
+  const cancelEdit = useCallback(() => {
     setIsEditing(false);
     setEditedQuestion({ type: "", question: "", choices: [] });
-  };
+  }, []);
 
-  // Add new choice in edit mode
-  const addChoice = () => {
+  const addChoice = useCallback(() => {
     setEditedQuestion((prev) => ({
       ...prev,
       choices: [...prev.choices, createEmptyChoice()],
     }));
-  };
+  }, [createEmptyChoice]);
 
-  // Update choice in edit mode
-  const updateChoice = (choiceId, field, value) => {
+  const updateChoice = useCallback((choiceId, field, value) => {
     setEditedQuestion((prev) => ({
       ...prev,
       choices: prev.choices.map((choice) =>
@@ -570,10 +662,9 @@ function SavedQuestion({
           : choice
       ),
     }));
-  };
+  }, []);
 
-  // Remove choice in edit mode
-  const removeChoice = (choiceId) => {
+  const removeChoice = useCallback((choiceId) => {
     setEditedQuestion((prev) => {
       return {
         ...prev,
@@ -585,10 +676,9 @@ function SavedQuestion({
         }),
       };
     });
-  };
+  }, []);
 
-  // Validate question
-  const validateQuestion = (question) => {
+  const validateQuestion = useCallback((question) => {
     if (!question.question.trim()) return "Question text is required";
     if (!question.type) return "Question type is required";
 
@@ -596,15 +686,14 @@ function SavedQuestion({
       if (question.choices.length < 2) return "At least 2 choices are required";
       if (question.choices.some((c) => !c.text.trim() && c.type !== "DELETE"))
         return "All choices must have text";
-      if (!question.choices.some((c) => c.isCorrect && c.type !== "DELETE"))
+      if (!question.choices.some((c) => (c.isCorrect && c.type !== "DELETE")||c.order))
         return "At least one correct answer is required";
     }
 
     return null;
-  };
+  }, []);
 
-  // Save edited question
-  const saveEdit = async () => {
+  const saveEdit = useCallback(async () => {
     const validation = validateQuestion(editedQuestion);
     if (validation) {
       setAlertError(validation);
@@ -623,12 +712,27 @@ function SavedQuestion({
 
     if (req.status === 200) {
       setIsEditing(false);
-      await getQuestion(); // Refresh the question data
+      await getQuestion();
     }
-  };
+  }, [editedQuestion, validateQuestion, setAlertError, setToastLoading, testId, questionId, getQuestion]);
 
-  // Render choices editor for edit mode
-  const renderChoicesEditor = () => {
+  const updateQuestionText = useCallback((value) => {
+    setEditedQuestion((prev) => ({ ...prev, question: value }));
+  }, []);
+
+  const handleMoveUp = useCallback(() => {
+    moveQuestion(question?.id, "up");
+  }, [moveQuestion, question?.id]);
+
+  const handleMoveDown = useCallback(() => {
+    moveQuestion(question?.id, "down");
+  }, [moveQuestion, question?.id]);
+
+  const handleDelete = useCallback(() => {
+    setDeleteDialog({ open: true, questionId: question?.id });
+  }, [setDeleteDialog, question?.id]);
+
+  const renderChoicesEditor = useMemo(() => {
     if (editedQuestion.type === QuestionTypes.TEXT) return null;
 
     return (
@@ -638,63 +742,18 @@ function SavedQuestion({
         </Typography>
 
         {editedQuestion.choices.map((choice, index) => {
-          if (choice.type === "DELETE") return;
+          if (choice.type === "DELETE") return null;
           return (
-            <Card key={choice.id} sx={{ mb: 2 }}>
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <TextField
-                    fullWidth
-                    label={`Choice ${index + 1}`}
-                    value={choice.text}
-                    onChange={(e) =>
-                      updateChoice(choice.id, "text", e.target.value)
-                    }
-                    disabled={editedQuestion.type === QuestionTypes.TRUE_FALSE}
-                  />
-
-                  {editedQuestion.type === QuestionTypes.MULTIPLE_CHOICE ? (
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={choice.isCorrect}
-                          onChange={(e) =>
-                            updateChoice(
-                              choice.id,
-                              "isCorrect",
-                              e.target.checked
-                            )
-                          }
-                        />
-                      }
-                      label="Correct"
-                    />
-                  ) : (
-                    <FormControlLabel
-                      control={
-                        <Radio
-                          checked={choice.isCorrect}
-                          onChange={() =>
-                            updateChoice(choice.id, "isCorrect", true)
-                          }
-                        />
-                      }
-                      label="Correct"
-                    />
-                  )}
-
-                  {editedQuestion.type !== QuestionTypes.TRUE_FALSE &&
-                    editedQuestion.choices.length > 2 && (
-                      <IconButton
-                        onClick={() => removeChoice(choice.id)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    )}
-                </Box>
-              </CardContent>
-            </Card>
+            <ChoiceEditor
+              key={choice.id}
+              choice={choice}
+              index={index}
+              questionType={editedQuestion.type}
+              onUpdate={updateChoice}
+              onRemove={removeChoice}
+              onMove={moveChoice}
+              canRemove={editedQuestion.choices.length > 2}
+            />
           );
         })}
 
@@ -710,7 +769,7 @@ function SavedQuestion({
         )}
       </Box>
     );
-  };
+  }, [editedQuestion.type, editedQuestion.choices, updateChoice, removeChoice, moveChoice, addChoice]);
 
   return (
     <Accordion key={questionId} sx={{ mb: 2, position: "relative" }}>
@@ -731,7 +790,6 @@ function SavedQuestion({
 
       <AccordionDetails>
         {!isEditing ? (
-          // View Mode
           <>
             <Typography variant="body1" gutterBottom>
               {question?.question}
@@ -765,14 +823,14 @@ function SavedQuestion({
 
             <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
               <IconButton
-                onClick={() => moveQuestion(question?.id, "up")}
+                onClick={handleMoveUp}
                 disabled={index === 0}
                 size="small"
               >
                 <ArrowUpIcon />
               </IconButton>
               <IconButton
-                onClick={() => moveQuestion(question?.id, "down")}
+                onClick={handleMoveDown}
                 disabled={index === questions.length - 1}
                 size="small"
               >
@@ -782,9 +840,7 @@ function SavedQuestion({
                 <EditIcon />
               </IconButton>
               <IconButton
-                onClick={() =>
-                  setDeleteDialog({ open: true, questionId: question?.id })
-                }
+                onClick={handleDelete}
                 size="small"
                 color="error"
               >
@@ -793,7 +849,6 @@ function SavedQuestion({
             </Box>
           </>
         ) : (
-          // Edit Mode
           <>
             <TextField
               fullWidth
@@ -801,17 +856,12 @@ function SavedQuestion({
               rows={3}
               label="Question"
               value={editedQuestion.question}
-              onChange={(e) =>
-                setEditedQuestion((prev) => ({
-                  ...prev,
-                  question: e.target.value,
-                }))
-              }
+              onChange={(e) => updateQuestionText(e.target.value)}
               margin="normal"
               placeholder="Enter your question here..."
             />
 
-            {renderChoicesEditor()}
+            {renderChoicesEditor}
 
             <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
               <Button
@@ -835,6 +885,6 @@ function SavedQuestion({
       </AccordionDetails>
     </Accordion>
   );
-}
+});
 
 export default TestQuestionManager;
