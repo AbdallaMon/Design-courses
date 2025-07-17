@@ -470,7 +470,6 @@ const TestQuestionManager = ({ testId }) => {
   );
 };
 
-// Optimized ChoiceEditor component to prevent unnecessary re-renders
 const ChoiceEditor = React.memo(({ 
   choice, 
   index, 
@@ -657,7 +656,7 @@ const SavedQuestion = React.memo(({
           ? { ...choice, [field]: value }
           : (field === "isCorrect" &&
               prev.type === QuestionTypes.SINGLE_CHOICE) ||
-            (field === "isCorrect" && QuestionTypes.TRUE_FALSE)
+            (field === "isCorrect" && prev.type === QuestionTypes.TRUE_FALSE)
           ? { ...choice, isCorrect: false }
           : choice
       ),
