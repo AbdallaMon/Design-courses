@@ -43,7 +43,6 @@ function CreateCourseDialog({ open, onClose, onCourseCreate }) {
   const hasAdminAccess = checkIfAdmin(user);
 
   const validateForm = () => {
-    console.log(formData, "formData");
     if (!formData.title.trim()) {
       setAlertError("Course title is required");
       return false;

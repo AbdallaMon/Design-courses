@@ -44,6 +44,7 @@ import Link from "next/link";
 import FullScreenLoader from "@/app/UiComponents/feedback/loaders/FullscreenLoader";
 import { CreateLesson } from "./CreateNewLesson";
 import DeleteModal from "@/app/models/DeleteModal";
+import LessonAccessDialog from "./LessonAccess";
 
 export function Lessons({ courseId }) {
   const [data, setData] = useState({ courseTitle: "", lessons: [] });
@@ -221,6 +222,11 @@ export function Lessons({ courseId }) {
                       size="small"
                       variant="outlined"
                     />
+                  </Box>
+
+                  <Box mt={1} mx="auto">
+
+                    <LessonAccessDialog courseId={courseId} lessonId={lesson.id} />
                   </Box>
                 </CardContent>
 

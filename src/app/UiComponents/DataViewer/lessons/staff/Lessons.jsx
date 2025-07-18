@@ -107,16 +107,25 @@ const LesssonView = ({ courseId }) => {
         order: lesson.order,
         data: lesson,
       });
+      const allowedLesson=lesson.allowedUsers.find((allow)=>allow.userId===user.id)
       if (userProgress?.completedLessons.includes(lesson.id) && !stop) {
-        lastAvailableIndex++;
+        if(allowedLesson){
+          lastAvailableIndex++;
+        }
       } else {
-        stop = true;
+    if(!allowedLesson&&!stop){
+        --lastAvailableIndex
+        stop= true;
       }
-      // Add tests after the lesson
+              stop = true;
+      }
+      if(!allowedLesson&&!stop){
+        --lastAvailableIndex
+        stop= true;
+      }
       if (lesson.tests && lesson.tests.length > 0) {
         lesson.tests.forEach((test) => {
           if (test.attempts.length > 0 && !stop) {
-            const now = new Date();
       const hasFinishedAttempt = test.attempts.some((attempt) => {
         if (attempt.passed||attempt.score>=80) return true;
         return false;

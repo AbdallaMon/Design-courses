@@ -35,6 +35,7 @@ import { getDataAndSet } from "@/app/helpers/functions/getDataAndSet";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
 import { useToastContext } from "@/app/providers/ToastLoadingProvider";
+import HomeworkComponent from "./HomeworkComponent";
 
 const LessonComponent = ({ lessonId, isCompleted, courseId, onComplete }) => {
   const [completed, setCompleted] = useState(isCompleted);
@@ -61,21 +62,21 @@ const LessonComponent = ({ lessonId, isCompleted, courseId, onComplete }) => {
   function calculateProgress() {
     return completed ? "COMPLETED" : "IN PROGRESS";
   }
-  async function markLessonAsCompleted() {
-    const req = await handleRequestSubmit(
-      {},
-      setToastLoading,
-      `shared/courses/${courseId}/lessons/${lesson.id}`,
-      false,
-      "Updating",
-      false,
-      "PATCH"
-    );
-    if (req.status === 200) {
-      onComplete();
-      setCompleted(true);
-    }
-  }
+  // async function markLessonAsCompleted() {
+  //   const req = await handleRequestSubmit(
+  //     {},
+  //     setToastLoading,
+  //     `shared/courses/${courseId}/lessons/${lesson.id}`,
+  //     false,
+  //     "Updating",
+  //     false,
+  //     "PATCH"
+  //   );
+  //   if (req.status === 200) {
+  //     onComplete();
+  //     setCompleted(true);
+  //   }
+  // }
   const renderVideo = (video) => {
     if (video.videoType === "IFRAME") {
       return (
@@ -247,14 +248,14 @@ const LessonComponent = ({ lessonId, isCompleted, courseId, onComplete }) => {
 
             {/* Progress Bar */}
             <Box sx={{ mb: 2, display: "flex", gap: 2, alignItems: "center" }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Lesson Progress: {calculateProgress()}
-              </Typography>
-              {!completed && (
-                <Button variant="outlined" onClick={markLessonAsCompleted}>
-                  Mark as completed
-                </Button>
-              )}
+        
+          <HomeworkComponent courseId={courseId} lessonId={lessonId} lessonProgress={calculateProgress()} onUpdate={
+()=>{
+         onComplete();
+       setCompleted(true);
+ 
+}
+          } />
             </Box>
           </Paper>
           {/* Lesson Content Sections */}
