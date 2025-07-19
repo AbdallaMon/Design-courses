@@ -39,9 +39,11 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
   const [loading, setLoading] = useState(false);
   const {toastLoading:submitting,setToastLoading:setSubmitting}=useToastContext()
   const theme=useTheme()
+  
   useEffect(() => {
     fetchHomeworks();
   }, []);
+  
   const fetchHomeworks = async () => {
     await getDataAndSet({url:`shared/courses/${courseId}/lessons/${lessonId}/home-work`,setData:setHomeworks,setLoading})
   };
@@ -69,7 +71,6 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
         url= uploadResponse.fileUrls.file[0];
       }
 
-
       const req=await handleRequestSubmit({url,title,type:uploadType},setSubmitting,`shared/courses/${courseId}/lessons/${lessonId}/home-work`)
       if(req.status===200){
         onUpdate()
@@ -77,9 +78,6 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
         await fetchHomeworks()
       }
     }
-
-
-
 
   const handleCloseUploadDialog = () => {
     setUploadDialog(false);
@@ -93,223 +91,407 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
   const hasSummary = summaryHomeworks.length > 0;
   const canProceed = hasVideo && hasSummary;
 
-
   return (
-      <Box>
-        {/* Header Section */}
-        <Box  sx={{display:'flex',flexDirection:"column",gap:1}}>
-                <Typography variant="subtitle2" >
-                          Lesson Progress: {lessonProgress}
-                        </Typography>
+    <Box>
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary' }}>
+            Lesson Homework
+          </Typography>
           <Button
             variant="contained"
-            size="large"
             startIcon={<FiBookOpen />}
-            sx={{width:"fit-content"}}
             onClick={() => setHomeworkDialog(true)}
+            sx={{ 
+              borderRadius: 2,
+              textTransform: 'none',
+              px: 3,
+              py: 1
+            }}
           >
-            Open Homework
+            View Requirements
           </Button>
-              <Alert severity={canProceed ? "success" : "warning"} sx={{ mb: 3 }}>
-              {canProceed 
-                ? "Great! You've completed all homework requirements and can proceed to the next lesson."
-                : "You must finish your homework in order to go to the next lesson or test."
-              }
-            </Alert>
         </Box>
 
-        <Dialog open={homeworkDialog} onClose={() => setHomeworkDialog(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
+        {/* Status Card */}
+        <Card 
+          sx={{ 
+            background: canProceed 
+              ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%)',
+            border: `1px solid ${canProceed ? theme.palette.success.light : theme.palette.warning.light}`,
+            borderRadius: 2
+          }}
+        >
+          <CardContent sx={{ py: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <FiBookOpen size={24} />
-              Homework Requirements
+              {canProceed ? (
+                <FiCheck size={24} color={theme.palette.success.main} />
+              ) : (
+                <FiAlertCircle size={24} color={theme.palette.warning.main} />
+              )}
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  {canProceed ? "All Requirements Complete!" : "Homework Required"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {canProceed 
+                    ? "You can now proceed to the next lesson or test."
+                    : "Submit both video and summary homework to continue."
+                  }
+                </Typography>
+              </Box>
+              {canProceed && (
+                <Chip 
+                  label="Ready" 
+                  color="success" 
+                  variant="filled"
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
             </Box>
-          </DialogTitle>
-          <DialogContent sx={{position:"relative"}}>
-            {loading&&<LoadingOverlay/>}
-            <Alert severity={canProceed ? "success" : "warning"} sx={{ mb: 3 }}>
-              {canProceed 
-                ? "Great! You've completed all homework requirements and can proceed to the next lesson."
-                : "You must finish your homework in order to go to the next lesson or test."
-              }
-            </Alert>
-            
-            <Typography variant="body1" sx={{ mb: 3 }}>
-              You must upload at least one file for video and one file for summary to complete this lesson.
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Main Homework Dialog */}
+      <Dialog 
+        open={homeworkDialog} 
+        onClose={() => setHomeworkDialog(false)} 
+        maxWidth="lg" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            minHeight: '70vh'
+            ,"&.MuiPaper-root":{
+          margin:2,width:"100%"
+        } 
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{
+              p: 1,
+              borderRadius: 2,
+              bgcolor: 'primary.light',
+              color: 'primary.contrastText'
+            }}>
+              <FiBookOpen size={20} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Homework Center
             </Typography>
-            
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ position: "relative", px: 2}}>
+          {loading && <LoadingOverlay/>}
+          
+          {/* Quick Actions */}
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{mb:2}}>
+
+            <Typography variant="h6" sx={{ mb: 0, fontWeight: 600 }}>
+              Submit Your Work
+            </Typography>
+                    <Typography variant="caption" sx={{ mb: 2,  }}>
+                      You must upload at least one video and one pdf 
+            </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'no-wrap' }}>
               <Button
-                variant="contained"
+                variant="outlined"
                 startIcon={<FiVideo />}
                 onClick={() => handleUploadClick('VIDEO')}
-                color="primary"
                 size="large"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  px: 3,
+                  py: 1.5,
+                  borderWidth: 2,
+                  '&:hover': {
+                    borderWidth: 2,
+                    bgcolor: 'primary.light',
+                    color: 'primary.contrastText'
+                  }
+                }}
               >
-                Upload Video Homework
+                Upload Video
               </Button>
               <Button
-                variant="contained"
+                variant="outlined"
                 startIcon={<FiFileText />}
                 onClick={() => handleUploadClick('SUMMARY')}
                 color="secondary"
                 size="large"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  px: 3,
+                  py: 1.5,
+                  borderWidth: 2,
+                  '&:hover': {
+                    borderWidth: 2,
+                    bgcolor: 'secondary.light',
+                    color: 'secondary.contrastText'
+                  }
+                }}
               >
-                Upload Summary Homework
+                Upload Summary
               </Button>
             </Box>
-                <Grid container spacing={3} sx={{ my: 2 }}>
-          <Grid size={{md:4}}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <FiVideo size={24} color={theme.palette.primary.main} />
-                  <Box>
-                    <Typography variant="h6">{videoHomeworks.length}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Video Homeworks
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid size={{md:4}}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <FiFileText size={24} color={theme.palette.secondary.main} />
-                  <Box>
-                    <Typography variant="h6">{summaryHomeworks.length}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Summary Homeworks
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid size={{md:4}}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  {canProceed ? (
-                    <FiCheck size={24} color={theme.palette.success.main} />
-                  ) : (
-                    <FiAlertCircle size={24} color={theme.palette.warning.main} />
-                  )}
-                  <Box>
-                    <Typography variant="h6">
-                      {canProceed ? 'Ready' : 'Pending'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Next Lesson Status
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-           <Paper sx={{ p: 3, borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Your Homework Submissions
-          </Typography>
-          
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : homeworks.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
-              No homework submitted yet
-            </Typography>
-          ) : (
-            <List>
-              {homeworks.map((homework, index) => (
-                <React.Fragment key={homework.id}>
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemIcon>
-                      {homework.type === 'VIDEO' ? (
-                        <FiVideo size={20} color={theme.palette.primary.main} />
-                      ) : (
-                        <FiFileText size={20} color={theme.palette.secondary.main} />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={homework.title}
-                      secondary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                          <Chip
-                            label={homework.type}
-                            size="small"
-                            color={homework.type === 'VIDEO' ? 'primary' : 'secondary'}
-                            variant="outlined"
-                          />
-                     <Button component="a" target='_blank' href={homework.url} variant='outlined'>
-Open link
-                     </Button>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                  {index < homeworks.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
-            </List>
-          )}
-        </Paper>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setHomeworkDialog(false)}>Close</Button>
-          </DialogActions>
-        </Dialog>
+          </Box>
 
-        {/* Upload Dialog */}
-        <Dialog open={uploadDialog} onClose={handleCloseUploadDialog} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <FiUpload size={24} />
-              Upload {uploadType === 'VIDEO' ? 'Video' : 'Summary'} Homework
+          {/* Progress Cards */}
+          <Grid container spacing={{xs:1.5,md:3}} sx={{ mb: 4 }}>
+            <Grid size={{xs:6,md:4}}>
+              <Card sx={{ 
+                height: '100%',
+                background: hasVideo 
+                  ? 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%)'
+                  : 'inherit',
+                border: hasVideo ? `1px solid ${theme.palette.primary.light}` : '1px solid #e0e0e0'
+              }}>
+                <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                  <Box sx={{
+                    display: 'inline-flex',
+                    p: 2,
+                    borderRadius: 3,
+                    bgcolor: hasVideo ? 'primary.light' : 'grey.100',
+                    color: hasVideo ? 'primary.contrastText' : 'grey.600',
+                    mb: 2
+                  }}>
+                    <FiVideo size={24} />
+                  </Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                    {videoHomeworks.length}
+                  </Typography>
+                  <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 1 }}>
+                    Video Submissions
+                  </Typography>
+                  <Chip
+                    label={hasVideo ? "Complete" : "Required"}
+                    color={hasVideo ? "primary" : "default"}
+                    variant={hasVideo ? "filled" : "outlined"}
+                    size="small"
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid size={{xs:6,md:4}}>
+              <Card sx={{ 
+                height: '100%',
+                background: hasSummary 
+                  ? 'linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(156, 39, 176, 0.05) 100%)'
+                  : 'inherit',
+                border: hasSummary ? `1px solid ${theme.palette.secondary.light}` : '1px solid #e0e0e0'
+              }}>
+                <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                  <Box sx={{
+                    display: 'inline-flex',
+                    p: 2,
+                    borderRadius: 3,
+                    bgcolor: hasSummary ? 'secondary.light' : 'grey.100',
+                    color: hasSummary ? 'secondary.contrastText' : 'grey.600',
+                    mb: 2
+                  }}>
+                    <FiFileText size={24} />
+                  </Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                    {summaryHomeworks.length}
+                  </Typography>
+                  <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 1 }}>
+                    Summary Submissions
+                  </Typography>
+                  <Chip
+                    label={hasSummary ? "Complete" : "Required"}
+                    color={hasSummary ? "secondary" : "default"}
+                    variant={hasSummary ? "filled" : "outlined"}
+                    size="small"
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+            
+      
+          </Grid>
+
+          {/* Submissions List */}
+          <Paper sx={{ p: {xs:1.5,md:3}, borderRadius: 3, bgcolor: 'grey.50' }}>
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+              Your Submissions
+            </Typography>
+            
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                <CircularProgress size={40} />
+              </Box>
+            ) : homeworks.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 6 }}>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                  No submissions yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Upload your homework files to get started
+                </Typography>
+              </Box>
+            ) : (
+              <List sx={{ bgcolor: 'background.paper', borderRadius: 2 }}>
+                {homeworks.map((homework, index) => (
+                  <React.Fragment key={homework.id}>
+                    <ListItem sx={{ py: 2 }}>
+                      <ListItemIcon>
+                        <Box sx={{
+                          p: 1,
+                          borderRadius: 2,
+                          bgcolor: homework.type === 'VIDEO' ? 'primary.light' : 'secondary.light',
+                          color: homework.type === 'VIDEO' ? 'primary.contrastText' : 'secondary.contrastText'
+                        }}>
+                          {homework.type === 'VIDEO' ? (
+                            <FiVideo size={20} />
+                          ) : (
+                            <FiFileText size={20} />
+                          )}
+                        </Box>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                            {homework.title}
+                          </Typography>
+                        }
+                        secondary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Chip
+                              label={homework.type}
+                              size="small"
+                              color={homework.type === 'VIDEO' ? 'primary' : 'secondary'}
+                              variant="outlined"
+                            />
+                            <Button 
+                              component="a" 
+                              target='_blank' 
+                              href={homework.url} 
+                              variant='contained'
+                              size="small"
+                              sx={{
+                                textTransform: 'none',
+                                borderRadius: 1.5
+                              }}
+                            >
+                              View File
+                            </Button>
+                          </Box>
+                        }
+                      />
+                    </ListItem>
+                    {index < homeworks.length - 1 && <Divider />}
+                  </React.Fragment>
+                ))}
+              </List>
+            )}
+          </Paper>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={() => setHomeworkDialog(false)}
+            variant="outlined"
+            sx={{ 
+              textTransform: 'none',
+              px: 3,
+              borderRadius: 2
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Enhanced Upload Dialog */}
+      <Dialog 
+        open={uploadDialog} 
+        onClose={handleCloseUploadDialog} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3
+          }
+        }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{
+              p: 1,
+              borderRadius: 2,
+              bgcolor: uploadType === 'VIDEO' ? 'primary.light' : 'secondary.light',
+              color: uploadType === 'VIDEO' ? 'primary.contrastText' : 'secondary.contrastText'
+            }}>
+              <FiUpload size={20} />
             </Box>
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <TextField
-                fullWidth
-                label="Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                sx={{ mb: 3 }}
-                required
-              />
-              <SimpleFileInput 
-              
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Upload {uploadType === 'VIDEO' ? 'Video' : 'Summary'}
+            </Typography>
+          </Box>
+        </DialogTitle>
+        
+        <DialogContent sx={{ pt: 3 }}>
+          <TextField
+            fullWidth
+            label="Assignment Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            sx={{ 
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2
+              }
+            }}
+            required
+            placeholder={`Enter a title for your ${uploadType === 'VIDEO' ? 'video' : 'summary'}`}
+          />
+          <SimpleFileInput 
             id="file"
             setData={setFile}
-            label={uploadType==="VIDEO"?"Upload a video":"Upload a file"}
-            input={{accept:uploadType === 'VIDEO' ? 'video/*' : 'application/pdf'}}
-              />
-    
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseUploadDialog} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              variant="contained"
-              disabled={!title.trim() || !file || submitting}
-              startIcon={submitting ? <CircularProgress size={16} /> : <FiUpload />}
-            >
-              {submitting ? 'Uploading...' : 'Upload'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
+            label={uploadType === "VIDEO" ? "Choose video file" : "Choose document"}
+            input={{ accept: uploadType === 'VIDEO' ? 'video/*' : 'application/pdf' }}
+          />
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button 
+            onClick={handleCloseUploadDialog} 
+            disabled={submitting}
+            variant="outlined"
+            sx={{ 
+              textTransform: 'none',
+              px: 3,
+              borderRadius: 2
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={!title.trim() || !file || submitting}
+            startIcon={submitting ? <CircularProgress size={16} /> : <FiUpload />}
+            sx={{ 
+              textTransform: 'none',
+              px: 3,
+              borderRadius: 2
+            }}
+          >
+            {submitting ? 'Uploading...' : 'Upload File'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 
