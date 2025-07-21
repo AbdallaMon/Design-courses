@@ -414,12 +414,11 @@ const theme=useTheme()
                     />
                   </Stack>
 
-                  {/* Enhanced Homework Component Integration */}
                   <Box sx={{ mt: 2 }}>
                     <HomeworkComponent 
                       courseId={courseId} 
                       lessonId={lessonId} 
-                      lessonProgress={calculateProgress()} 
+                      type={"LESSON"}
                       onUpdate={() => {
                         onComplete();
                         setCompleted(true);

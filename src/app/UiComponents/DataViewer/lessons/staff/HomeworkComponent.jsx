@@ -29,7 +29,7 @@ import { useToastContext } from '@/app/providers/ToastLoadingProvider';
 import { handleRequestSubmit } from '@/app/helpers/functions/handleSubmit';
 import LoadingOverlay from '@/app/UiComponents/feedback/loaders/LoadingOverlay';
 
-const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
+const HomeworkComponent = ({courseId,lessonId,onUpdate,type,testId}) => {
   const [homeworkDialog, setHomeworkDialog] = useState(false);
   const [uploadDialog, setUploadDialog] = useState(false);
   const [uploadType, setUploadType] = useState('');
@@ -71,7 +71,7 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
         url= uploadResponse.fileUrls.file[0];
       }
 
-      const req=await handleRequestSubmit({url,title,type:uploadType},setSubmitting,`shared/courses/${courseId}/lessons/${lessonId}/home-work`)
+      const req=await handleRequestSubmit({testId,url,title,type:uploadType},setSubmitting,`shared/courses/${courseId}/lessons/${lessonId}/home-work`)
       if(req.status===200){
         onUpdate()
         handleCloseUploadDialog()
@@ -89,14 +89,14 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
   const summaryHomeworks = homeworks.filter(hw => hw.type === 'SUMMARY');
   const hasVideo = videoHomeworks.length > 0;
   const hasSummary = summaryHomeworks.length > 0;
-  const canProceed = hasVideo && hasSummary;
+  const canProceed = type==="LESSON"?hasSummary:hasVideo;
 
   return (
     <Box>
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            Lesson Homework
+            {type==="LESSON"?"Lesson":"Test"} Homework
           </Typography>
           <Button
             variant="contained"
@@ -137,7 +137,7 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
                 <Typography variant="body2" color="text.secondary">
                   {canProceed 
                     ? "You can now proceed to the next lesson or test."
-                    : "Submit both video and summary homework to continue."
+                    : `Submit a ${type==="LESSON"?"summary pdf":"video"} homework to continue.`
                   }
                 </Typography>
               </Box>
@@ -181,7 +181,7 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
               <FiBookOpen size={20} />
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Homework Center
+              Homework 
             </Typography>
           </Box>
         </DialogTitle>
@@ -196,11 +196,12 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
             <Typography variant="h6" sx={{ mb: 0, fontWeight: 600 }}>
               Submit Your Work
             </Typography>
-                    <Typography variant="caption" sx={{ mb: 2,  }}>
-                      You must upload at least one video and one pdf 
+             <Typography variant="caption" sx={{ mb: 2,  }}>
+               You must upload at least one {type==="LESSON"?"Summary pdf":"Video"}
             </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'no-wrap' }}>
+              {type==="TEST"?
               <Button
                 variant="outlined"
                 startIcon={<FiVideo />}
@@ -221,6 +222,7 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
               >
                 Upload Video
               </Button>
+:
               <Button
                 variant="outlined"
                 startIcon={<FiFileText />}
@@ -242,12 +244,13 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
               >
                 Upload Summary
               </Button>
+}
             </Box>
           </Box>
 
-          {/* Progress Cards */}
           <Grid container spacing={{xs:1.5,md:3}} sx={{ mb: 4 }}>
-            <Grid size={{xs:6,md:4}}>
+            {type==="TEST"?
+            <Grid size={{xs:12}}>
               <Card sx={{ 
                 height: '100%',
                 background: hasVideo 
@@ -281,8 +284,8 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
                 </CardContent>
               </Card>
             </Grid>
-            
-            <Grid size={{xs:6,md:4}}>
+            :
+            <Grid size={{xs:12}}>
               <Card sx={{ 
                 height: '100%',
                 background: hasSummary 
@@ -316,8 +319,7 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
                 </CardContent>
               </Card>
             </Grid>
-            
-      
+}
           </Grid>
 
           {/* Submissions List */}
@@ -341,8 +343,11 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
               </Box>
             ) : (
               <List sx={{ bgcolor: 'background.paper', borderRadius: 2 }}>
-                {homeworks.map((homework, index) => (
-                  <React.Fragment key={homework.id}>
+                {homeworks.map((homework, index) => {
+                if(homework.type==="VIDEO"&&type==="LESSON")return
+                if(homework.type==="SUMMARY"&&type==="TEST")return
+
+                  return       <React.Fragment key={homework.id}>
                     <ListItem sx={{ py: 2 }}>
                       <ListItemIcon>
                         <Box sx={{
@@ -391,7 +396,7 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
                     </ListItem>
                     {index < homeworks.length - 1 && <Divider />}
                   </React.Fragment>
-                ))}
+                })}
               </List>
             )}
           </Paper>
@@ -440,7 +445,7 @@ const HomeworkComponent = ({courseId,lessonId,onUpdate,lessonProgress}) => {
           </Box>
         </DialogTitle>
         
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent sx={{ pt: "24px !important" }}>
           <TextField
             fullWidth
             label="Assignment Title"

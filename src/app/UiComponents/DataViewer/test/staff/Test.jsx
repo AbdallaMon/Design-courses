@@ -51,8 +51,9 @@ import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
 import { useToastContext } from "@/app/providers/ToastLoadingProvider";
 import dayjs from "dayjs";
 import { MdArrowDownward, MdArrowUpward } from "react-icons/md";
+import HomeworkComponent from "../../lessons/staff/HomeworkComponent";
 
-const TestComponent = ({ testId = 1 }) => {
+const TestComponent = ({ courseId,testId = 1,onComplete,setCompleted }) => {
   const [test, setTest] = useState(null);
   const { user } = useAuth();
   const userId = user?.id;
@@ -674,6 +675,24 @@ const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptL
             ? `Course: ${test.course?.title}`
             : `Lesson: ${test.lesson?.title}`}
         </Typography>
+        {!test.course&&test.lessonId&&attempts && attempts.find((attempt)=>attempt.passed)&&    <Box sx={{ mt: 2 }}>
+                            <HomeworkComponent 
+                              courseId={courseId} 
+                              lessonId={test.lessonId} 
+                              type={"TEST"}
+                              testId={test.id}
+                              onUpdate={() => {
+                                if(onComplete){
+
+                                  onComplete();
+                                }
+                                if(setCompleted){
+
+                                  setCompleted(true);
+                                }
+                              }} 
+                            />
+                          </Box>}
       </Paper>
 
       {viewMode === "attempts" && renderAttemptsList()}

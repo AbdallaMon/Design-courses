@@ -212,7 +212,6 @@ const LesssonView = ({ courseId }) => {
       setData: setUserProgress,
     });
   }
-
   const createCourseStructure = () => {
     if (!course || !course.lessons) return [];
     const items = [];
@@ -247,6 +246,8 @@ const LesssonView = ({ courseId }) => {
       if (lesson.tests && lesson.tests.length > 0) {
         lesson.tests.forEach((test) => {
           const hasPassed = test.attempts?.some((attempt) => attempt.passed) ?? false;
+                const isCompletedTest = userProgress?.completedTests.includes(test.id);
+
           const canPreviewTest = allowedLesson && isCompleted;
           items.push({
             type: "test",
@@ -255,7 +256,7 @@ const LesssonView = ({ courseId }) => {
             lessonId: lesson.id,
             order: lesson.order,
             data: test,
-            canPreview: canPreviewTest && hasPassed,
+            canPreview: canPreviewTest && hasPassed&&isCompletedTest,
           });
           if (canPreviewTest) {
             lastAvailableIndex++;
@@ -414,6 +415,7 @@ const LesssonView = ({ courseId }) => {
 
   const calculateProgress = () => {
     const items = courseItems;
+    if(lastAvailableIndex===-1)return 0
     return items?.length > 0 ? (lastAvailableIndex / items.length) * 100 : 0;
   };
 
@@ -502,7 +504,13 @@ const LesssonView = ({ courseId }) => {
   // Test View with enhanced layout
   const TestView = ({ test }) => (
     <Container maxWidth="md" sx={{ py: 2, px: 0 }}>
-      <TestComponent testId={test.id} />
+      <TestComponent testId={test.id}  
+    
+              courseId={courseId}
+        onComplete={getCourse}
+        
+
+      />
     </Container>
   );
 
