@@ -306,6 +306,14 @@ const TestComponent = ({
         "PUT"
       );
       if (req.status === 200) {
+        if (req.data.passed) {
+          if (onComplete) {
+            onComplete();
+          }
+          if (setCompleted) {
+            setCompleted(true);
+          }
+        }
         await getUserAttempts();
         setViewMode("attempts");
         setUserAnswers({});

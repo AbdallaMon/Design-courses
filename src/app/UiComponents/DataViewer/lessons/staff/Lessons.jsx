@@ -247,7 +247,8 @@ const LesssonView = ({ courseId }) => {
       );
       const isCompleted =
         userProgress?.completedLessons.includes(lesson.id) ||
-        lesson.tests.length > 0;
+        lesson.tests.length > 0 ||
+        !lesson.mustUploadHomework;
 
       const canPreviewLesson =
         allowedLesson && (index === 0 || items[lastAvailableIndex]?.canPreview);
@@ -274,15 +275,17 @@ const LesssonView = ({ courseId }) => {
         lesson.tests.forEach((test, testIndex) => {
           const hasPassed =
             test.attempts?.some((attempt) => attempt.passed) ?? false;
-          const isCompletedTest =
-            lesson.tests.length === testIndex + 1
-              ? userProgress?.completedLessons.includes(lesson.id)
-              : true;
+          const isCompletedTest = !lesson.mustUploadHomework
+            ? true
+            : lesson.tests.length === testIndex + 1
+            ? userProgress?.completedLessons.includes(lesson.id)
+            : true;
 
           const canPreviewTest =
             allowedLesson &&
             isCompleted &&
             items[lastAvailableIndex]?.canPreview;
+
           items.push({
             type: "test",
             id: test.id,
@@ -291,12 +294,14 @@ const LesssonView = ({ courseId }) => {
             order: lesson.order,
             data: test,
             canPreview: isCompletedTest && canPreviewTest && hasPassed,
-            mustAddHomeWork: lesson.tests.length === testIndex + 1,
+            mustAddHomeWork:
+              lesson.tests.length === testIndex + 1 &&
+              lesson.mustUploadHomework,
           });
-          if (canPreviewTest) {
+          if (canPreviewTest && hasPassed) {
             lastAvailableIndex++;
           }
-          if (!canPreviewTest) {
+          if (!canPreviewTest && !hasPassed) {
             stop = true;
           }
         });

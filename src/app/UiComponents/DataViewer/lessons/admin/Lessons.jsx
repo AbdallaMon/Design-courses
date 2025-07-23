@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
-  CardActions,
   Typography,
   Button,
   Dialog,
@@ -19,13 +18,13 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  CircularProgress,
   Alert,
   Grid,
   Container,
   AppBar,
   Toolbar,
-  IconButton,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import {
   MdPlayArrow,
@@ -45,13 +44,15 @@ import FullScreenLoader from "@/app/UiComponents/feedback/loaders/FullscreenLoad
 import { CreateLesson } from "./CreateNewLesson";
 import DeleteModal from "@/app/models/DeleteModal";
 import LessonAccessDialog from "./LessonAccess";
+import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
+import { useToastContext } from "@/app/providers/ToastLoadingProvider";
 
 export function Lessons({ courseId }) {
   const [data, setData] = useState({ courseTitle: "", lessons: [] });
   const [loading, setLoading] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  console.log(courseId, "courseId");
+  const { setToastLoading } = useToastContext();
   useEffect(() => {
     if (courseId) {
       getLessons();
@@ -65,7 +66,28 @@ export function Lessons({ courseId }) {
       setLoading,
     });
   }
-  async function handleDeleteLesson(lessonId) {}
+  async function toggleMustUploadHomeWork({ lesson }) {
+    const req = await handleRequestSubmit(
+      { mustUploadHomework: !lesson.mustUploadHomework },
+      setToastLoading,
+      `admin/courses/${courseId}/lessons/${lesson.id}/home-works/toggle`,
+      false,
+      "Updating"
+    );
+    if (req.status === 200) {
+      setData((old) => {
+        return {
+          ...old,
+          lessons: old.lessons.map((l) => {
+            if (l.id === lesson.id) {
+              return { ...l, mustUploadHomework: !l.mustUploadHomework };
+            }
+            return l;
+          }),
+        };
+      });
+    }
+  }
   const handlePreview = (lesson) => {
     setSelectedLesson(lesson);
     setDialogOpen(true);
@@ -153,7 +175,21 @@ export function Lessons({ courseId }) {
                       />
                     </Box>
                   </Box>
-
+                  <Box>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={lesson.mustUploadHomework}
+                          onChange={async (e) => {
+                            await toggleMustUploadHomeWork({ lesson });
+                          }}
+                          color="primary"
+                        />
+                      }
+                      label="Must upload home works"
+                      sx={{ ml: 0 }}
+                    />
+                  </Box>
                   {lesson.description && (
                     <Typography
                       variant="body2"
