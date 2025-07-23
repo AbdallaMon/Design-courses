@@ -123,28 +123,35 @@ export function Lessons({ courseId }) {
                   },
                 }}
               >
-                <CardContent sx={{ flexGrow: 1 }}>
+                <CardContent sx={{ flexGrow: 1, pb: 1 }}>
                   <Box
                     display="flex"
                     justifyContent="space-between"
-                    alignItems="center"
+                    alignItems="flex-start"
                     mb={2}
                   >
-                    <Typography variant="h6" component="h3" gutterBottom>
+                    <Typography
+                      variant="h6"
+                      component="h3"
+                      gutterBottom
+                      sx={{ flex: 1, mr: 2 }}
+                    >
                       {lesson.title}
                     </Typography>
-                    <DeleteModal
-                      buttonType="ICON"
-                      item={lesson}
-                      href={`admin/courses/${courseId}/lessons`}
-                      handleClose={getLessons}
-                    />
-                    <Chip
-                      label={`#${lesson.order}`}
-                      size="small"
-                      variant="outlined"
-                      color="primary"
-                    />
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Chip
+                        label={`Order : ${lesson.order}`}
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                      />
+                      <DeleteModal
+                        buttonType="ICON"
+                        item={lesson}
+                        href={`admin/courses/${courseId}/lessons`}
+                        handleClose={getLessons}
+                      />
+                    </Box>
                   </Box>
 
                   {lesson.description && (
@@ -185,7 +192,7 @@ export function Lessons({ courseId }) {
                     </Box>
                   </Box>
 
-                  <Box display="flex" gap={1} flexWrap="wrap">
+                  <Box display="flex" gap={1} flexWrap="wrap" mb={2}>
                     {lesson.videos?.length > 0 && (
                       <Chip
                         icon={<MdOndemandVideo />}
@@ -204,7 +211,6 @@ export function Lessons({ courseId }) {
                       size="small"
                       variant="outlined"
                     />
-
                     <Chip
                       icon={<MdLink />}
                       label={`${lesson.links?.length || 0} link${
@@ -213,7 +219,6 @@ export function Lessons({ courseId }) {
                       size="small"
                       variant="outlined"
                     />
-
                     <Chip
                       icon={<MdQuiz />}
                       label={`${lesson._count.tests} test${
@@ -224,43 +229,62 @@ export function Lessons({ courseId }) {
                     />
                   </Box>
 
-                  <Box mt={1} mx="auto">
-
-                    <LessonAccessDialog courseId={courseId} lessonId={lesson.id} />
+                  <Box mt="auto">
+                    <LessonAccessDialog
+                      courseId={courseId}
+                      lessonId={lesson.id}
+                    />
                   </Box>
                 </CardContent>
 
-                <CardActions
-                  sx={{ justifyContent: "space-between", px: 2, pb: 2 }}
-                >
-                  <Button
-                    startIcon={<MdPreview />}
-                    onClick={() => handlePreview(lesson)}
-                    variant="outlined"
-                    size="small"
-                  >
-                    Preview
-                  </Button>
-                  <Button
-                    startIcon={<MdEdit />}
-                    variant="contained"
-                    size="small"
-                    component={Link}
-                    href={`/dashboard/courses/${lesson.courseId}/lessons/${lesson.id}`}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<MdQuiz />}
-                    sx={{ flex: 1, minWidth: "auto" }}
-                    component={Link}
-                    href={`/dashboard/courses/${lesson.courseId}/lessons/${lesson.id}/tests`}
-                  >
-                    Tests
-                  </Button>
-                </CardActions>
+                {/* Enhanced Actions Section */}
+                <Box sx={{ p: 2, pt: 1, borderTop: 1, borderColor: "divider" }}>
+                  {/* Primary Actions Row */}
+                  <Box display="flex" gap={1} mb={1}>
+                    <Button
+                      startIcon={<MdPreview />}
+                      onClick={() => handlePreview(lesson)}
+                      variant="outlined"
+                      size="small"
+                      sx={{ flex: 1 }}
+                    >
+                      Preview
+                    </Button>
+                    <Button
+                      startIcon={<MdEdit />}
+                      variant="contained"
+                      size="small"
+                      component={Link}
+                      href={`/dashboard/courses/${lesson.courseId}/lessons/${lesson.id}`}
+                      sx={{ flex: 1 }}
+                    >
+                      Edit
+                    </Button>
+                  </Box>
+
+                  {/* Secondary Actions Row */}
+                  <Box display="flex" gap={1}>
+                    <Button
+                      component={Link}
+                      href={`/dashboard/courses/${lesson.courseId}/lessons/${lesson.id}/home-works`}
+                      variant="outlined"
+                      size="small"
+                      sx={{ flex: 1 }}
+                    >
+                      Homework
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<MdQuiz />}
+                      component={Link}
+                      href={`/dashboard/courses/${lesson.courseId}/lessons/${lesson.id}/tests`}
+                      sx={{ flex: 1 }}
+                    >
+                      Tests
+                    </Button>
+                  </Box>
+                </Box>
               </Card>
             </Grid>
           ))}

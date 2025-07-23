@@ -51,6 +51,7 @@ import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
 import FullScreenLoader from "@/app/UiComponents/feedback/loaders/FullscreenLoader";
 import LoadingOverlay from "@/app/UiComponents/feedback/loaders/LoadingOverlay";
 import SimpleFileInput from "@/app/UiComponents/formComponents/SimpleFileInput";
+import LessonVideoPdfManager from "./PdfsForVideo";
 
 // Enhanced Edit Lesson Info Component
 const EditLessonInfo = ({ courseId, lessonId }) => {
@@ -633,6 +634,11 @@ const VideosSection = ({ courseId, lessonId }) => {
                                   size="small"
                                   color="secondary"
                                   variant="outlined"
+                                />
+                                <LessonVideoPdfManager
+                                  courseId={courseId}
+                                  lessonId={lessonId}
+                                  lessonVideoId={video.id}
                                 />
                               </Box>
                             }

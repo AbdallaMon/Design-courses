@@ -52,8 +52,15 @@ import { useToastContext } from "@/app/providers/ToastLoadingProvider";
 import dayjs from "dayjs";
 import { MdArrowDownward, MdArrowUpward } from "react-icons/md";
 import HomeworkComponent from "../../lessons/staff/HomeworkComponent";
+import CombinedHomeWork from "../../lessons/staff/CombinedHomeWork";
 
-const TestComponent = ({ courseId,testId = 1,onComplete,setCompleted }) => {
+const TestComponent = ({
+  courseId,
+  testId = 1,
+  onComplete,
+  setCompleted,
+  mustAddHomeWork,
+}) => {
   const [test, setTest] = useState(null);
   const { user } = useAuth();
   const userId = user?.id;
@@ -147,7 +154,7 @@ const TestComponent = ({ courseId,testId = 1,onComplete,setCompleted }) => {
         setCurrentAttempt(ongoingAttempt);
         setViewMode("test");
         loadUserAnswers(ongoingAttempt.answers);
-        startTimer(ongoingAttempt,test);
+        startTimer(ongoingAttempt, test);
       }
     } catch (error) {
       console.error("Error loading test data:", error);
@@ -167,7 +174,7 @@ const TestComponent = ({ courseId,testId = 1,onComplete,setCompleted }) => {
     setUserAnswers(answersMap);
   };
 
-  const startTimer = (attempt,test) => {
+  const startTimer = (attempt, test) => {
     if (!test?.timeLimit) return;
 
     const startTime = new Date(attempt.startTime);
@@ -175,31 +182,29 @@ const TestComponent = ({ courseId,testId = 1,onComplete,setCompleted }) => {
     const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
     const remainingMinutes = test.timeLimit - elapsedMinutes;
 
-
     if (remainingMinutes > 0) {
       setTimeLeft(remainingMinutes * 60);
       setIsTimerRunning(true);
     } else {
-      if(attempt){
-
-        handleSubmitAttempt(attempt,test);
+      if (attempt) {
+        handleSubmitAttempt(attempt, test);
       }
     }
   };
 
   useEffect(() => {
     let interval;
-if(!isTimerRunning||timeLeft===0){
-     if(currentAttempt){
-              handleSubmitAttempt();
-            }
-}
+    if (!isTimerRunning || timeLeft === 0) {
+      if (currentAttempt) {
+        handleSubmitAttempt();
+      }
+    }
     if (isTimerRunning && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             setIsTimerRunning(false);
-        
+
             return 0;
           }
           return prev - 1;
@@ -207,8 +212,8 @@ if(!isTimerRunning||timeLeft===0){
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isTimerRunning, ,currentAttempt]);
-useEffect(()=>{},[])
+  }, [isTimerRunning, , currentAttempt]);
+  useEffect(() => {}, []);
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -245,51 +250,56 @@ useEffect(()=>{},[])
     }
   };
 
-  const handleSubmitAttempt = async (attempt,preLoadedTest) => {
-const now = new Date();
-const startTime = new Date(!currentAttempt?attempt.startTime:currentAttempt.startTime);
-const timeLimitMs = (!test?preLoadedTest.timeLimit:test.timeLimit) * 60 * 1000; // minutes to ms
-const expireTime = new Date(startTime.getTime() + timeLimitMs);
+  const handleSubmitAttempt = async (attempt, preLoadedTest) => {
+    const now = new Date();
+    const startTime = new Date(
+      !currentAttempt ? attempt.startTime : currentAttempt.startTime
+    );
+    const timeLimitMs =
+      (!test ? preLoadedTest.timeLimit : test.timeLimit) * 60 * 1000; // minutes to ms
+    const expireTime = new Date(startTime.getTime() + timeLimitMs);
 
-const isTimeLeft = now < expireTime;
-if (isTimeLeft) {
-    if (savingAnswers?.length > 0) {
-      return;
+    const isTimeLeft = now < expireTime;
+    if (isTimeLeft) {
+      if (savingAnswers?.length > 0) {
+        return;
+      }
+      const unansweredQuestions = questions.filter((q) => !userAnswers[q.id]);
+      const incompleteQuestions = questions.filter((q) => {
+        const answer = userAnswers[q.id];
+        if (!answer) return false;
+        const noText = !answer.textAnswer || answer.textAnswer.trim() === "";
+        const noChoices =
+          !answer.selectedAnswers || answer.selectedAnswers.length === 0;
+        return noText && noChoices;
+      });
+
+      const errorIds = [
+        ...unansweredQuestions.map((q) => q.id),
+        ...incompleteQuestions.map((q) => q.id),
+      ];
+
+      setErrorQuestions(errorIds);
+
+      if (errorIds.length > 0) {
+        const element = document.getElementById(`question-${errorIds[0]}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        return;
+      }
     }
-  const unansweredQuestions = questions.filter((q) => !userAnswers[q.id]);
-  const incompleteQuestions = questions.filter((q) => {
-    const answer = userAnswers[q.id];
-    if (!answer) return false;
-    const noText = !answer.textAnswer || answer.textAnswer.trim() === "";
-    const noChoices =
-      !answer.selectedAnswers || answer.selectedAnswers.length === 0;
-    return noText && noChoices;
-  });
 
-  const errorIds = [
-    ...unansweredQuestions.map((q) => q.id),
-    ...incompleteQuestions.map((q) => q.id),
-  ];
-
-  setErrorQuestions(errorIds);
-
-  if (errorIds.length > 0) {
-    const element = document.getElementById(`question-${errorIds[0]}`);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-    return;
-  }
-}
-
-    if (!currentAttempt&&!attempt) return;
+    if (!currentAttempt && !attempt) return;
 
     try {
       setIsTimerRunning(false);
       const req = await handleRequestSubmit(
         {},
         setToastLoading,
-        `shared/courses/tests/${testId}/attampts/${!currentAttempt?attempt.id:currentAttempt.id}`,
+        `shared/courses/tests/${testId}/attampts/${
+          !currentAttempt ? attempt.id : currentAttempt.id
+        }`,
         false,
         "Creating",
         false,
@@ -306,15 +316,21 @@ if (isTimeLeft) {
       console.error("Error submitting attempt:", error);
     }
   };
-const lastAttempt = attempts?.length ? attempts[attempts.length - 1] : null;
-const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptLimit):0;
+  const lastAttempt = attempts?.length ? attempts[attempts.length - 1] : null;
+  const attemptLimit = test
+    ? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptLimit)
+    : 0;
 
   const canStartNewAttempt = () => {
     if (!test) return false;
     const completedAttempts = attempts.filter((a) => a.endTime).length;
     const ongoingAttempt = attempts.find((a) => !a.endTime);
- 
-    return !attempts||attempts.length===0|| (completedAttempts < attemptLimit&& !ongoingAttempt);
+
+    return (
+      !attempts ||
+      attempts.length === 0 ||
+      (completedAttempts < attemptLimit && !ongoingAttempt)
+    );
   };
 
   const isAttemptExpired = (attempt, test) => {
@@ -360,7 +376,14 @@ const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptL
               <ListItem>
                 <ListItemText
                   primary={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2,flexWrap:"wrap" }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <Typography variant="h6">
                         Attempt {attempt.attemptCount}
                       </Typography>
@@ -381,22 +404,27 @@ const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptL
                   }
                   secondary={
                     <Box sx={{ mt: 1 }}>
-                         <Box sx={{ mt: 1 }}>
-                                            <Typography variant="body2">
-                      Started: {dayjs(attempt.startTime).format("DD/MM/YYYY - HH:mm")}
-                                            </Typography>
-                                            {attempt.endTime && (
-                                              <>
-                                                <Typography variant="body2">
-                                                  Completed:{" "}
-                                                 {dayjs(attempt.endTime).format("DD/MM/YYYY - HH:mm")}
-                                                </Typography>
-                                                <Typography variant="body2">
-                                                  Score: {attempt.score}%
-                                                </Typography>
-                                              </>
-                                            )}
-                                          </Box>
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="body2">
+                          Started:{" "}
+                          {dayjs(attempt.startTime).format(
+                            "DD/MM/YYYY - HH:mm"
+                          )}
+                        </Typography>
+                        {attempt.endTime && (
+                          <>
+                            <Typography variant="body2">
+                              Completed:{" "}
+                              {dayjs(attempt.endTime).format(
+                                "DD/MM/YYYY - HH:mm"
+                              )}
+                            </Typography>
+                            <Typography variant="body2">
+                              Score: {attempt.score}%
+                            </Typography>
+                          </>
+                        )}
+                      </Box>
                     </Box>
                   }
                 />
@@ -420,7 +448,7 @@ const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptL
                         setCurrentAttempt(attempt);
                         setViewMode("test");
                         loadUserAnswers(attempt.answers);
-                        startTimer(attempt,test);
+                        startTimer(attempt, test);
                       }}
                     >
                       Continue
@@ -537,8 +565,9 @@ const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptL
                   question={question}
                   handleAnswerChange={handleAnswerChange}
                   userAnswers={userAnswers}
-                  savingAnswers={savingAnswers} attempts={attempts}
-                test={test}
+                  savingAnswers={savingAnswers}
+                  attempts={attempts}
+                  test={test}
                 />{" "}
               </CardContent>
             </Card>
@@ -660,12 +689,9 @@ const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptL
         <Typography variant="h4" gutterBottom>
           {test.title}
         </Typography>
-        <Box sx={{ display: "flex", gap: 2, mb: 2,flexWrap:"wrap" }}>
+        <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
           <Chip label={test.type} variant="outlined" />
-          <Chip
-            label={`${attemptLimit} attempts allowed`}
-            variant="outlined"
-          />
+          <Chip label={`${attemptLimit} attempts allowed`} variant="outlined" />
           {test.timeLimit && (
             <Chip label={`${test.timeLimit} minutes`} variant="outlined" />
           )}
@@ -675,24 +701,26 @@ const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptL
             ? `Course: ${test.course?.title}`
             : `Lesson: ${test.lesson?.title}`}
         </Typography>
-        {!test.course&&test.lessonId&&attempts && attempts.find((attempt)=>attempt.passed)&&    <Box sx={{ mt: 2 }}>
-                            <HomeworkComponent 
-                              courseId={courseId} 
-                              lessonId={test.lessonId} 
-                              type={"TEST"}
-                              testId={test.id}
-                              onUpdate={() => {
-                                if(onComplete){
-
-                                  onComplete();
-                                }
-                                if(setCompleted){
-
-                                  setCompleted(true);
-                                }
-                              }} 
-                            />
-                          </Box>}
+        {!test.course &&
+          test.lessonId &&
+          attempts &&
+          attempts.find((attempt) => attempt.passed) &&
+          mustAddHomeWork && (
+            <Box sx={{ mt: 2 }}>
+              <CombinedHomeWork
+                courseId={courseId}
+                lessonId={test.lessonId}
+                onUpdate={() => {
+                  if (onComplete) {
+                    onComplete();
+                  }
+                  if (setCompleted) {
+                    setCompleted(true);
+                  }
+                }}
+              />
+            </Box>
+          )}
       </Paper>
 
       {viewMode === "attempts" && renderAttemptsList()}
@@ -728,7 +756,6 @@ const attemptLimit =test? Math.max(lastAttempt?.attemptLimit ?? 0, test.attemptL
   );
 };
 
-
 const RenderQuestionContent = ({
   question,
   isReview = false,
@@ -740,7 +767,7 @@ const RenderQuestionContent = ({
   const currentAnswer = isReview
     ? reviewAnswers?.[question.id]
     : userAnswers[question.id];
-    let [saved,setSaved]=useState(false)
+  let [saved, setSaved] = useState(false);
   const handleChange = (answer) => {
     if (!isReview) {
       handleAnswerChange(question.id, answer);
@@ -748,46 +775,52 @@ const RenderQuestionContent = ({
   };
 
   const getOrderedChoices = () => {
-    if (currentAnswer?.selectedAnswers && currentAnswer.selectedAnswers.length > 0) {
+    if (
+      currentAnswer?.selectedAnswers &&
+      currentAnswer.selectedAnswers.length > 0
+    ) {
       const orderedChoices = [];
-      currentAnswer.selectedAnswers.forEach(answerText => {
-        const choice = question.choices.find(c => c.text === answerText);
+      currentAnswer.selectedAnswers.forEach((answerText) => {
+        const choice = question.choices.find((c) => c.text === answerText);
         if (choice) {
           orderedChoices.push(choice);
         }
       });
-      
-      question.choices.forEach(choice => {
-        if (!orderedChoices.find(oc => oc.id === choice.id)) {
+
+      question.choices.forEach((choice) => {
+        if (!orderedChoices.find((oc) => oc.id === choice.id)) {
           orderedChoices.push(choice);
         }
       });
-      
-      return orderedChoices;
-    } else if(!isReview){
-      const newChoices=[...question.choices].sort(() => Math.random() - 0.5)
-      if(!saved){
 
+      return orderedChoices;
+    } else if (!isReview) {
+      const newChoices = [...question.choices].sort(() => Math.random() - 0.5);
+      if (!saved) {
         handleChange({ selectedAnswers: newChoices.map((c) => c.text) });
-       setSaved(true) 
+        setSaved(true);
       }
-    return newChoices;
-    }{
-      return [...question.choices].sort((a, b) => (a.order || 0) - (b.order || 0));
+      return newChoices;
+    }
+    {
+      return [...question.choices].sort(
+        (a, b) => (a.order || 0) - (b.order || 0)
+      );
     }
   };
 
   const moveChoice = (currentIndex, direction) => {
     const orderedChoices = getOrderedChoices();
     const newChoices = [...orderedChoices];
-    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    
+    const targetIndex =
+      direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
     if (targetIndex < 0 || targetIndex >= newChoices.length) return;
 
     // Swap the choices
     [newChoices[currentIndex], newChoices[targetIndex]] = [
       newChoices[targetIndex],
-      newChoices[currentIndex]
+      newChoices[currentIndex],
     ];
 
     // Save the new order
@@ -834,14 +867,16 @@ const RenderQuestionContent = ({
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     {choice.text}
-                    {attempts && attempts.find((attempt)=>attempt.passed) && (
+                    {attempts && attempts.find((attempt) => attempt.passed) && (
                       <>
-                        {isReview && choice.isCorrect && <FaCheck color="green" />}
+                        {isReview && choice.isCorrect && (
+                          <FaCheck color="green" />
+                        )}
                         {isReview &&
                           !choice.isCorrect &&
-                          currentAnswer?.selectedAnswers?.includes(choice.text) && (
-                            <FaTimes color="red" />
-                          )}
+                          currentAnswer?.selectedAnswers?.includes(
+                            choice.text
+                          ) && <FaTimes color="red" />}
                       </>
                     )}
                   </Box>
@@ -870,14 +905,16 @@ const RenderQuestionContent = ({
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     {choice.text}
-                    {attempts && attempts.find((attempt)=>attempt.passed) && (
+                    {attempts && attempts.find((attempt) => attempt.passed) && (
                       <>
-                        {isReview && choice.isCorrect && <FaCheck color="green" />}
+                        {isReview && choice.isCorrect && (
+                          <FaCheck color="green" />
+                        )}
                         {isReview &&
                           !choice.isCorrect &&
-                          currentAnswer?.selectedAnswers?.includes(choice.text) && (
-                            <FaTimes color="red" />
-                          )}
+                          currentAnswer?.selectedAnswers?.includes(
+                            choice.text
+                          ) && <FaTimes color="red" />}
                       </>
                     )}
                   </Box>
@@ -906,14 +943,16 @@ const RenderQuestionContent = ({
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     {choice.text}
-                    {attempts && attempts.find((attempt)=>attempt.passed) && (
+                    {attempts && attempts.find((attempt) => attempt.passed) && (
                       <>
-                        {isReview && choice.isCorrect && <FaCheck color="green" />}
+                        {isReview && choice.isCorrect && (
+                          <FaCheck color="green" />
+                        )}
                         {isReview &&
                           !choice.isCorrect &&
-                          currentAnswer?.selectedAnswers?.includes(choice.text) && (
-                            <FaTimes color="red" />
-                          )}
+                          currentAnswer?.selectedAnswers?.includes(
+                            choice.text
+                          ) && <FaTimes color="red" />}
                       </>
                     )}
                   </Box>
@@ -939,11 +978,11 @@ const RenderQuestionContent = ({
 
     case "ORDERING":
       const orderedChoices = getOrderedChoices();
-      
+
       return (
- <FormControl component="fieldset" fullWidth disabled={isReview}>
+        <FormControl component="fieldset" fullWidth disabled={isReview}>
           <FormLabel component="legend">
-          Use arrows to reorder items from first to last:
+            Use arrows to reorder items from first to last:
           </FormLabel>
           <Box sx={{ mt: 2 }}>
             {orderedChoices.map((choice, index) => (
@@ -958,7 +997,7 @@ const RenderQuestionContent = ({
                   justifyContent: "space-between",
                   border: "1px solid",
                   borderColor: "divider",
-                  backgroundColor: "background.paper"
+                  backgroundColor: "background.paper",
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -974,7 +1013,7 @@ const RenderQuestionContent = ({
                       color: "primary.contrastText",
                       borderRadius: "50%",
                       fontSize: "0.75rem",
-                      fontWeight: "bold"
+                      fontWeight: "bold",
                     }}
                   >
                     {index + 1}
@@ -983,9 +1022,10 @@ const RenderQuestionContent = ({
                 </Box>
 
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                  {attempts && attempts.find((attempt)=>attempt.passed) && isReview ? (
+                  {attempts &&
+                  attempts.find((attempt) => attempt.passed) &&
+                  isReview ? (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                
                       <Typography
                         variant="body2"
                         sx={{
@@ -998,12 +1038,12 @@ const RenderQuestionContent = ({
                           color: "success.contrastText",
                           borderRadius: "50%",
                           fontSize: "0.75rem",
-                          fontWeight: "bold"
+                          fontWeight: "bold",
                         }}
                       >
-                        {(choice.order)}
+                        {choice.order}
                       </Typography>
-                      {index+1 === (choice.order || 0) ? (
+                      {index + 1 === (choice.order || 0) ? (
                         <FaCheck color="green" />
                       ) : (
                         <FaTimes color="red" />
@@ -1036,8 +1076,6 @@ const RenderQuestionContent = ({
               </Paper>
             ))}
           </Box>
-          
-  
         </FormControl>
       );
 

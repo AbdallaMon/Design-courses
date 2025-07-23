@@ -48,31 +48,40 @@ import { useSearchParams } from "next/navigation";
 const DRAWER_WIDTH = 320;
 
 // Course Navigation Sidebar Component
-const CourseNavigation = ({ 
-  course, 
-  userProgress, 
-  courseItems, 
-  selectedItem, 
-  onItemClick, 
+const CourseNavigation = ({
+  course,
+  userProgress,
+  courseItems,
+  selectedItem,
+  onItemClick,
   calculateProgress,
   lastAvailableIndex,
   isItemAccessible,
   getStatusIcon,
   getStatusChip,
-  getItemStatus 
+  getItemStatus,
 }) => {
   const theme = useTheme();
 
-
-
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* Course Header */}
-      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' ,pt:{md:"80px"}}}>
+      <Box
+        sx={{
+          p: 3,
+          borderBottom: 1,
+          borderColor: "divider",
+          pt: { md: "80px" },
+        }}
+      >
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <School sx={{ mr: 2, fontSize: 32, color: "primary.main" }} />
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }} noWrap>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: "bold", fontSize: "1.1rem" }}
+              noWrap
+            >
               {course?.title}
             </Typography>
             <Typography variant="body2" color="text.secondary" noWrap>
@@ -97,24 +106,25 @@ const CourseNavigation = ({
             label={`${course?._count.lessons} Lessons`}
             variant="outlined"
             size="small"
-            sx={{ fontSize: '0.7rem', height: 24 }}
+            sx={{ fontSize: "0.7rem", height: 24 }}
           />
           <Chip
             label={`${userProgress?.completedLessons.length} Done`}
             variant="outlined"
             size="small"
             color="success"
-            sx={{ fontSize: '0.7rem', height: 24 }}
+            sx={{ fontSize: "0.7rem", height: 24 }}
           />
         </Box>
       </Box>
 
       {/* Course Content List */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
+      <Box sx={{ flex: 1, overflow: "auto" }}>
         <List sx={{ p: 0 }}>
           {courseItems?.map((item, index) => {
             const isAccessible = isItemAccessible(item, index, courseItems);
-            const isSelected = selectedItem?.id === item.id && selectedItem?.type === item.type;
+            const isSelected =
+              selectedItem?.id === item.id && selectedItem?.type === item.type;
 
             return (
               <React.Fragment key={`${item.type}-${item.id}`}>
@@ -127,8 +137,8 @@ const CourseNavigation = ({
                       py: 1.5,
                       px: 2,
                       borderLeft: isSelected ? 3 : 0,
-                      borderColor: 'primary.main',
-                      bgcolor: isSelected ? 'action.selected' : 'transparent',
+                      borderColor: "primary.main",
+                      bgcolor: isSelected ? "action.selected" : "transparent",
                       "&:hover": {
                         bgcolor: isAccessible ? "action.hover" : "transparent",
                       },
@@ -140,14 +150,24 @@ const CourseNavigation = ({
 
                     <ListItemText
                       primary={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            mb: 0.5,
+                          }}
+                        >
                           <Typography
                             variant="body2"
                             sx={{
-                              fontWeight: item.type === "lesson" ? "medium" : "normal",
-                              color: !isAccessible ? "text.disabled" : "text.primary",
+                              fontWeight:
+                                item.type === "lesson" ? "medium" : "normal",
+                              color: !isAccessible
+                                ? "text.disabled"
+                                : "text.primary",
                               flex: 1,
-                              fontSize: '0.875rem'
+                              fontSize: "0.875rem",
                             }}
                           >
                             {item.title}
@@ -161,7 +181,11 @@ const CourseNavigation = ({
                             <Typography
                               variant="caption"
                               color="text.secondary"
-                              sx={{ display: 'block', mt: 0.5, fontSize: '0.7rem' }}
+                              sx={{
+                                display: "block",
+                                mt: 0.5,
+                                fontSize: "0.7rem",
+                              }}
                             >
                               {item.duration} min
                             </Typography>
@@ -189,14 +213,14 @@ const LesssonView = ({ courseId }) => {
   const [viewType, setViewType] = useState("course");
   const [loading, setLoading] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  
+
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const type = searchParams.get("type");
   const itemId = searchParams.get("itemId");
-  
+
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   let lastAvailableIndex = -1;
 
@@ -218,12 +242,15 @@ const LesssonView = ({ courseId }) => {
     let stop = false;
 
     course.lessons.forEach((lesson, index) => {
-      const allowedLesson = lesson.allowedUsers.find((allow) => allow.userId === user.id);
-      const isCompleted = userProgress?.completedLessons.includes(lesson.id);
+      const allowedLesson = lesson.allowedUsers.find(
+        (allow) => allow.userId === user.id
+      );
+      const isCompleted =
+        userProgress?.completedLessons.includes(lesson.id) ||
+        lesson.tests.length > 0;
 
       const canPreviewLesson =
-        allowedLesson &&
-        (index === 0 || items[lastAvailableIndex]?.canPreview);
+        allowedLesson && (index === 0 || items[lastAvailableIndex]?.canPreview);
 
       items.push({
         type: "lesson",
@@ -244,11 +271,18 @@ const LesssonView = ({ courseId }) => {
       }
 
       if (lesson.tests && lesson.tests.length > 0) {
-        lesson.tests.forEach((test) => {
-          const hasPassed = test.attempts?.some((attempt) => attempt.passed) ?? false;
-                const isCompletedTest = userProgress?.completedTests.includes(test.id);
+        lesson.tests.forEach((test, testIndex) => {
+          const hasPassed =
+            test.attempts?.some((attempt) => attempt.passed) ?? false;
+          const isCompletedTest =
+            lesson.tests.length === testIndex + 1
+              ? userProgress?.completedLessons.includes(lesson.id)
+              : true;
 
-          const canPreviewTest = allowedLesson && isCompleted;
+          const canPreviewTest =
+            allowedLesson &&
+            isCompleted &&
+            items[lastAvailableIndex]?.canPreview;
           items.push({
             type: "test",
             id: test.id,
@@ -256,7 +290,8 @@ const LesssonView = ({ courseId }) => {
             lessonId: lesson.id,
             order: lesson.order,
             data: test,
-            canPreview: canPreviewTest && hasPassed&&isCompletedTest,
+            canPreview: isCompletedTest && canPreviewTest && hasPassed,
+            mustAddHomeWork: lesson.tests.length === testIndex + 1,
           });
           if (canPreviewTest) {
             lastAvailableIndex++;
@@ -268,10 +303,13 @@ const LesssonView = ({ courseId }) => {
       }
     });
 
-    if (lastAvailableIndex === items.length - 1 && items[lastAvailableIndex].canPreview) {
+    if (
+      lastAvailableIndex === items.length - 1 &&
+      items[lastAvailableIndex].canPreview
+    ) {
       lastAvailableIndex++;
     }
-    
+
     course.tests.forEach((test) => {
       items.push({
         type: "test",
@@ -360,24 +398,62 @@ const LesssonView = ({ courseId }) => {
 
   const getStatusChip = (item, isAccessible) => {
     if (!isAccessible)
-      return <Chip label="Locked" size="small" color="default" sx={{ height: 20, fontSize: '0.7rem' }} />;
+      return (
+        <Chip
+          label="Locked"
+          size="small"
+          color="default"
+          sx={{ height: 20, fontSize: "0.7rem" }}
+        />
+      );
 
     const status = getItemStatus(item);
 
     if (item.type === "lesson") {
       return status === "completed" ? (
-        <Chip label="Completed" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }} />
+        <Chip
+          label="Completed"
+          size="small"
+          color="success"
+          sx={{ height: 20, fontSize: "0.7rem" }}
+        />
       ) : (
-        <Chip label="Start" size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem' }} />
+        <Chip
+          label="Start"
+          size="small"
+          color="primary"
+          sx={{ height: 20, fontSize: "0.7rem" }}
+        />
       );
     }
 
     if (item.type === "test") {
       if (status === "passed")
-        return <Chip label="Passed" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }} />;
+        return (
+          <Chip
+            label="Passed"
+            size="small"
+            color="success"
+            sx={{ height: 20, fontSize: "0.7rem" }}
+          />
+        );
       if (status === "failed")
-        return <Chip label="Retry" size="small" color="error" sx={{ height: 20, fontSize: '0.7rem' }} />;
-      return <Chip label="Take Test" size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem' }} />;
+        return (
+          <Chip
+            label="Retry"
+            size="small"
+            color="error"
+            sx={{ height: 20, fontSize: "0.7rem" }}
+          />
+        );
+      return (
+        <Chip
+          label="Take Test"
+          size="small"
+          color="primary"
+          sx={{ height: 20, fontSize: "0.7rem" }}
+        />
+      );
     }
   };
 
@@ -405,7 +481,7 @@ const LesssonView = ({ courseId }) => {
       searchParams.toString() ? `?${searchParams.toString()}` : ""
     }`;
     window.history.pushState(null, "", newRelativePathQuery);
-    
+
     window.setTimeout(() => {
       setSelectedItem(null);
       setViewType("course");
@@ -415,7 +491,7 @@ const LesssonView = ({ courseId }) => {
 
   const calculateProgress = () => {
     const items = courseItems;
-    if(lastAvailableIndex===-1)return 0
+    if (lastAvailableIndex === -1) return 0;
     return items?.length > 0 ? (lastAvailableIndex / items.length) * 100 : 0;
   };
 
@@ -426,27 +502,32 @@ const LesssonView = ({ courseId }) => {
   // Course Overview Component (when no lesson/test is selected)
   const CourseOverview = () => (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Paper elevation={2} sx={{ p: 4, borderRadius: 3, textAlign: 'center' }}>
-        <School sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
-        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>
+      <Paper elevation={2} sx={{ p: 4, borderRadius: 3, textAlign: "center" }}>
+        <School sx={{ fontSize: 80, color: "primary.main", mb: 2 }} />
+        <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
           {course?.title}
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{ mb: 4, maxWidth: 600, mx: "auto" }}
+        >
           {course?.description}
         </Typography>
-        
+
         {lastAvailableIndex === -1 ? (
-          <Alert severity="warning" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+          <Alert severity="warning" sx={{ mb: 3, maxWidth: 500, mx: "auto" }}>
+            <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
               No Access Yet
             </Typography>
             <Typography variant="body2">
-              You don't have permission to access any lessons in this course. Please contact your instructor.
+              You don't have permission to access any lessons in this course.
+              Please contact your instructor.
             </Typography>
           </Alert>
         ) : (
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'medium' }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: "medium" }}>
               Ready to Start Learning?
             </Typography>
             <Button
@@ -454,19 +535,28 @@ const LesssonView = ({ courseId }) => {
               size="large"
               startIcon={<PlayArrow />}
               onClick={() => {
-                const firstAccessibleItem = courseItems.find((_, index) => isItemAccessible(courseItems[index], index, courseItems));
+                const firstAccessibleItem = courseItems.find((_, index) =>
+                  isItemAccessible(courseItems[index], index, courseItems)
+                );
                 if (firstAccessibleItem) {
                   handleItemClick(firstAccessibleItem);
                 }
               }}
-              sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}
+              sx={{ px: 4, py: 1.5, fontSize: "1.1rem" }}
             >
               Start First Lesson
             </Button>
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 2,
+            flexWrap: "wrap",
+          }}
+        >
           <Chip
             icon={<School />}
             label={`${course?._count.lessons} Lessons`}
@@ -491,25 +581,25 @@ const LesssonView = ({ courseId }) => {
 
   // Lesson View with enhanced layout
   const LessonView = ({ isCompleted, lesson, onComplete }) => (
-    <Box sx={{ height: '100%' }}>
+    <Box sx={{ height: "100%" }}>
       <LessonComponent
         isCompleted={isCompleted}
         lessonId={lesson.id}
         courseId={lesson.courseId}
         onComplete={onComplete}
+        noTest={lesson?.tests.length === 0}
       />
     </Box>
   );
 
   // Test View with enhanced layout
-  const TestView = ({ test }) => (
+  const TestView = ({ test, mustAddHomeWork }) => (
     <Container maxWidth="md" sx={{ py: 2, px: 0 }}>
-      <TestComponent testId={test.id}  
-    
-              courseId={courseId}
+      <TestComponent
+        testId={test.id}
+        courseId={courseId}
         onComplete={getCourse}
-        
-
+        mustAddHomeWork={mustAddHomeWork}
       />
     </Container>
   );
@@ -536,27 +626,36 @@ const LesssonView = ({ courseId }) => {
     if (viewType === "lesson" && selectedItem) {
       return (
         <LessonView
-          isCompleted={userProgress?.completedLessons?.includes(selectedItem.data.id)}
+          isCompleted={userProgress?.completedLessons?.includes(
+            selectedItem.data.id
+          )}
           lesson={selectedItem.data}
           onComplete={getCourse}
         />
       );
     }
-    
+
     if (viewType === "test" && selectedItem) {
-      return <TestView test={selectedItem.data} />;
+      return (
+        <TestView
+          test={selectedItem.data}
+          mustAddHomeWork={selectedItem.mustAddHomeWork}
+        />
+      );
     }
 
     return <CourseOverview />;
   };
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+    <Box
+      sx={{ display: "flex", height: "100vh", bgcolor: "background.default" }}
+    >
       {loading && <FullScreenLoader />}
-      
+
       {/* Mobile App Bar */}
-       {isMobile && (
-        <AppBar position="fixed" sx={{ zIndex:10,top:"80px" }}>
+      {isMobile && (
+        <AppBar position="fixed" sx={{ zIndex: 10, top: "80px" }}>
           <Toolbar>
             <IconButton
               color="inherit"
@@ -566,7 +665,12 @@ const LesssonView = ({ courseId }) => {
             >
               <Menu />
             </IconButton>
-            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{ flexGrow: 1 }}
+            >
               {selectedItem ? selectedItem.title : course?.title}
             </Typography>
             {selectedItem && (
@@ -576,7 +680,7 @@ const LesssonView = ({ courseId }) => {
             )}
           </Toolbar>
         </AppBar>
-      )} 
+      )}
 
       {/* Navigation Drawer */}
       <Box
@@ -590,11 +694,11 @@ const LesssonView = ({ courseId }) => {
           onClose={toggleMobileDrawer}
           ModalProps={{ keepMounted: true }}
           sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
+            display: { xs: "block", md: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
               width: DRAWER_WIDTH,
-              bgcolor: 'background.paper'
+              bgcolor: "background.paper",
             },
           }}
         >
@@ -606,13 +710,13 @@ const LesssonView = ({ courseId }) => {
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
+            display: { xs: "none", md: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
               width: DRAWER_WIDTH,
-              bgcolor: 'background.paper',
+              bgcolor: "background.paper",
               borderRight: 1,
-              borderColor: 'divider'
+              borderColor: "divider",
             },
           }}
           open
@@ -627,9 +731,9 @@ const LesssonView = ({ courseId }) => {
         sx={{
           flexGrow: 1,
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          height: '100vh',
-          overflow: 'auto',
-          mt: { xs: 8, md: 0 } // Account for mobile app bar
+          height: "100vh",
+          overflow: "auto",
+          mt: { xs: 8, md: 0 }, // Account for mobile app bar
         }}
       >
         {mainContent()}
@@ -640,7 +744,7 @@ const LesssonView = ({ courseId }) => {
         <Fab
           color="primary"
           sx={{
-            position: 'fixed',
+            position: "fixed",
             bottom: 16,
             right: 16,
             zIndex: theme.zIndex.speedDial,
