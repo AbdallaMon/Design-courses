@@ -53,6 +53,7 @@ const LessonComponent = ({
   courseId,
   onComplete,
   noTest,
+  mustAddHomeWork,
 }) => {
   const [completed, setCompleted] = useState(isCompleted);
   const [expandedSection, setExpandedSection] = useState("videos");
@@ -68,7 +69,6 @@ const LessonComponent = ({
       setData: setLesson,
     });
   }
-  console.log(lesson);
   useEffect(() => {
     if (lessonId) {
       getLesson();
@@ -566,7 +566,7 @@ const LessonComponent = ({
                   </Stack>
 
                   <Box sx={{ mt: 2 }}>
-                    {noTest && (
+                    {noTest && mustAddHomeWork && (
                       <CombinedHomeWork
                         courseId={courseId}
                         lessonId={lessonId}

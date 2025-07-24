@@ -262,6 +262,7 @@ const LesssonView = ({ courseId }) => {
         order: lesson.order,
         data: lesson,
         canPreview: canPreviewLesson && isCompleted,
+        mustAddHomeWork: lesson.mustUploadHomework,
       });
 
       if (canPreviewLesson && !stop) {
@@ -295,6 +296,7 @@ const LesssonView = ({ courseId }) => {
             data: test,
             canPreview: isCompletedTest && canPreviewTest && hasPassed,
             mustAddHomeWork:
+              lesson.tests.length > 0 &&
               lesson.tests.length === testIndex + 1 &&
               lesson.mustUploadHomework,
           });
@@ -585,7 +587,7 @@ const LesssonView = ({ courseId }) => {
   );
 
   // Lesson View with enhanced layout
-  const LessonView = ({ isCompleted, lesson, onComplete }) => (
+  const LessonView = ({ isCompleted, lesson, onComplete, mustAddHomeWork }) => (
     <Box sx={{ height: "100%" }}>
       <LessonComponent
         isCompleted={isCompleted}
@@ -593,6 +595,7 @@ const LesssonView = ({ courseId }) => {
         courseId={lesson.courseId}
         onComplete={onComplete}
         noTest={lesson?.tests.length === 0}
+        mustAddHomeWork={mustAddHomeWork}
       />
     </Box>
   );
@@ -635,6 +638,7 @@ const LesssonView = ({ courseId }) => {
             selectedItem.data.id
           )}
           lesson={selectedItem.data}
+          mustAddHomeWork={selectedItem.mustAddHomeWork}
           onComplete={getCourse}
         />
       );
