@@ -48,9 +48,11 @@ const ReviewAttempts = ({ testId = 1, userId }) => {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState("attempts");
-  const [selectedAttemptForReview, setSelectedAttemptForReview] = useState(null);
+  const [selectedAttemptForReview, setSelectedAttemptForReview] =
+    useState(null);
   const [approvalLoading, setApprovalLoading] = useState({});
-const {setToastLoading}=useToastContext()
+  const { setToastLoading } = useToastContext();
+
   async function getTest() {
     const req = await getDataAndSet({
       url: `shared/courses/tests/${testId}`,
@@ -79,44 +81,53 @@ const {setToastLoading}=useToastContext()
   }
 
   // New function to handle text answer approval
-  const handleTextAnswerApproval = async (attemptId, questionId, isApproved) => {
+  const handleTextAnswerApproval = async (
+    attemptId,
+    questionId,
+    isApproved
+  ) => {
     const approvalKey = `${attemptId}_${questionId}`;
-    setApprovalLoading(prev => ({ ...prev, [approvalKey]: true }));
-    
+    setApprovalLoading((prev) => ({ ...prev, [approvalKey]: true }));
+
     try {
+      const req = await handleRequestSubmit(
+        { isApproved },
+        setToastLoading,
+        `admin/courses/tests/${testId}/attempts/${attemptId}/questions/${questionId}/approve`
+      );
 
-     const req= await handleRequestSubmit({isApproved},setToastLoading,`admin/courses/tests/${testId}/attempts/${attemptId}/questions/${questionId}/approve`)
-
-      if (req.status===200) {
+      if (req.status === 200) {
         // Update the selected attempt with the new approval status
-        setSelectedAttemptForReview(prev => ({
+        setSelectedAttemptForReview((prev) => ({
           ...prev,
-          answers: prev.answers.map(answer => 
-            answer.questionId === questionId 
+          answers: prev.answers.map((answer) =>
+            answer.questionId === questionId
               ? { ...answer, isApproved }
               : answer
-          )
+          ),
         }));
-                setAttempts(prev => prev.map(attempt => 
-          attempt.id === attemptId 
-            ? {
-                ...attempt,
-                answers: attempt.answers.map(answer => 
-                  answer.questionId === questionId 
-                    ? { ...answer, isApproved }
-                    : answer
-                )
-              }
-            : attempt
-        ));
+        setAttempts((prev) =>
+          prev.map((attempt) =>
+            attempt.id === attemptId
+              ? {
+                  ...attempt,
+                  answers: attempt.answers.map((answer) =>
+                    answer.questionId === questionId
+                      ? { ...answer, isApproved }
+                      : answer
+                  ),
+                }
+              : attempt
+          )
+        );
       } else {
-        throw new Error('Failed to update approval status');
+        throw new Error("Failed to update approval status");
       }
     } catch (error) {
-      console.error('Error updating approval:', error);
+      console.error("Error updating approval:", error);
       // You might want to show an error message to the user here
     } finally {
-      setApprovalLoading(prev => ({ ...prev, [approvalKey]: false }));
+      setApprovalLoading((prev) => ({ ...prev, [approvalKey]: false }));
     }
   };
 
@@ -125,15 +136,11 @@ const {setToastLoading}=useToastContext()
   }, [testId, userId]);
 
   const loadTestData = async () => {
-    await Promise.all([
-      getTest(),
-      getTestQuestions(),
-      getUserAttempts(),
-    ]);
+    await Promise.all([getTest(), getTestQuestions(), getUserAttempts()]);
   };
 
   const renderAttemptsList = () => (
-    <Box>
+    <Box dir="rtl">
       <Box
         sx={{
           display: "flex",
@@ -142,13 +149,11 @@ const {setToastLoading}=useToastContext()
           mb: 3,
         }}
       >
-        <Typography variant="h5">Test Attempts</Typography>
+        <Typography variant="h5">محاولات الاختبار</Typography>
       </Box>
 
       {attempts.length === 0 ? (
-        <Alert severity="info">
-          No attempts yet.
-        </Alert>
+        <Alert severity="info">لا توجد محاولات بعد.</Alert>
       ) : (
         <List>
           {attempts.map((attempt, index) => (
@@ -158,17 +163,17 @@ const {setToastLoading}=useToastContext()
                   primary={
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                       <Typography variant="h6">
-                        Attempt {attempt.attemptCount}
+                        المحاولة {attempt.attemptCount}
                       </Typography>
                       {attempt.endTime ? (
                         <Chip
-                          label={attempt.passed ? "Passed" : "Failed"}
+                          label={attempt.passed ? "نجح" : "فشل"}
                           color={attempt.passed ? "success" : "error"}
                           size="small"
                         />
                       ) : (
                         <Chip
-                          label="In Progress"
+                          label="قيد التقييم"
                           color="warning"
                           size="small"
                         />
@@ -178,16 +183,19 @@ const {setToastLoading}=useToastContext()
                   secondary={
                     <Box sx={{ mt: 1 }}>
                       <Typography variant="body2">
-                        Started: {dayjs(attempt.startTime).format("DD/MM/YYYY - HH:mm")}
+                        بدأ في:{" "}
+                        {dayjs(attempt.startTime).format("DD/MM/YYYY - HH:mm")}
                       </Typography>
                       {attempt.endTime && (
                         <>
                           <Typography variant="body2">
-                            Completed:{" "}
-                            {dayjs(attempt.endTime).format("DD/MM/YYYY - HH:mm")}
+                            انتهى في:{" "}
+                            {dayjs(attempt.endTime).format(
+                              "DD/MM/YYYY - HH:mm"
+                            )}
                           </Typography>
                           <Typography variant="body2">
-                            Score: {attempt.score}%
+                            النتيجة: {attempt.score}%
                           </Typography>
                         </>
                       )}
@@ -203,7 +211,7 @@ const {setToastLoading}=useToastContext()
                       setViewMode("review");
                     }}
                   >
-                    Review
+                    مراجعة
                   </Button>
                 </Box>
               </ListItem>
@@ -227,7 +235,7 @@ const {setToastLoading}=useToastContext()
     });
 
     return (
-      <Box>
+      <Box dir="rtl">
         <Box
           sx={{
             display: "flex",
@@ -240,17 +248,17 @@ const {setToastLoading}=useToastContext()
             startIcon={<FaArrowLeft />}
             onClick={() => setViewMode("attempts")}
           >
-            Back to Attempts
+            العودة للمحاولات
           </Button>
           <Typography variant="h5">
-            Review Attempt {selectedAttemptForReview.attemptCount}
+            مراجعة المحاولة {selectedAttemptForReview.attemptCount}
           </Typography>
         </Box>
 
         <Alert severity="info" sx={{ mb: 3 }}>
-          Score: {selectedAttemptForReview.score}% | Status:{" "}
-          {selectedAttemptForReview.passed ? "Passed" : "Failed"} | Time:{" "}
-          {selectedAttemptForReview.timePassed} minutes
+          النتيجة: {selectedAttemptForReview.score}% | الحالة:{" "}
+          {selectedAttemptForReview.passed ? "نجح" : "فشل"} | الوقت المستغرق:{" "}
+          {selectedAttemptForReview.timePassed} دقيقة
         </Alert>
 
         {questions.map((question, index) => (
@@ -259,9 +267,9 @@ const {setToastLoading}=useToastContext()
               <Box
                 sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
               >
-                <Typography variant="h6">Question {index + 1}</Typography>
+                <Typography variant="h6">السؤال {index + 1}</Typography>
                 <Chip
-                  label={question.type.replace("_", " ")}
+                  label={getQuestionTypeInArabic(question.type)}
                   size="small"
                   variant="outlined"
                 />
@@ -286,6 +294,18 @@ const {setToastLoading}=useToastContext()
     );
   };
 
+  // Helper function to translate question types
+  const getQuestionTypeInArabic = (type) => {
+    const translations = {
+      MULTIPLE_CHOICE: "اختيار متعدد",
+      SINGLE_CHOICE: "اختيار واحد",
+      TRUE_FALSE: "صح أم خطأ",
+      TEXT: "إجابة نصية",
+      ORDERING: "ترتيب",
+    };
+    return translations[type] || type;
+  };
+
   if (loading) {
     return (
       <Box
@@ -304,13 +324,13 @@ const {setToastLoading}=useToastContext()
   if (!test) {
     return (
       <Alert severity="error">
-        Test not found or you don't have permission to access it.
+        الاختبار غير موجود أو ليس لديك صلاحية للوصول إليه.
       </Alert>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: "1200px", mx: "auto", p: 3 }}>
+    <Box sx={{ maxWidth: "1200px", mx: "auto", p: 3 }} dir="rtl">
       {/* Test Header */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h4" gutterBottom>
@@ -319,31 +339,38 @@ const {setToastLoading}=useToastContext()
         <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
           <Chip label={test.type} variant="outlined" />
           <Chip
-            label={`${attempts&&attempts.length>0?attempts[attempts.length-1].attemptLimit:test.attemptLimit} attempts allowed`}
+            label={`${
+              attempts && attempts.length > 0
+                ? attempts[attempts.length - 1].attemptLimit
+                : test.attemptLimit
+            } محاولات مسموحة`}
             variant="outlined"
           />
           {test.timeLimit && (
-            <Chip label={`${test.timeLimit} minutes`} variant="outlined" />
+            <Chip label={`${test.timeLimit} دقيقة`} variant="outlined" />
           )}
         </Box>
         <Typography variant="body1" color="text.secondary">
           {test.course
-            ? `Course: ${test.course?.title}`
-            : `Lesson: ${test.lesson?.title}`}
+            ? `الدورة: ${test.course?.title}`
+            : `الدرس: ${test.lesson?.title}`}
         </Typography>
-        {attempts&&attempts.length>0&&
-        <Box>
+        {attempts && attempts.length > 0 && (
           <Box>
-
-          <strong>Name</strong> :{attempts[0].user.name}
+            <Box>
+              <strong>الاسم</strong> :{attempts[0].user.name}
+            </Box>
+            <Box>
+              <strong>البريد الإلكتروني</strong> :{attempts[0].user.email}
+            </Box>
           </Box>
-             <Box>
-
-          <strong>Email</strong> :{attempts[0].user.email}
-          </Box>
-        </Box>
-}
-      <AttemptsLimit attempts={attempts}setAttempts={setAttempts} testId={testId}  userId={userId}/>
+        )}
+        <AttemptsLimit
+          attempts={attempts}
+          setAttempts={setAttempts}
+          testId={testId}
+          userId={userId}
+        />
       </Paper>
 
       {viewMode === "attempts" && renderAttemptsList()}
@@ -373,23 +400,23 @@ const RenderQuestionContent = ({
       handleAnswerChange(question.id, answer);
     }
   };
-      const orderedChoices = [];
-      if(question.type==="ORDERING"){
 
-        currentAnswer.selectedAnswers.forEach(answerText => {
-          const choice = question.choices.find(c => c.text === answerText);
-          if (choice) {
-            orderedChoices.push(choice);
-          }
-        });
-      
-      question.choices.forEach(choice => {
-        if (!orderedChoices.find(oc => oc.id === choice.id)) {
-          orderedChoices.push(choice);
-        }
-      });
-    }
-      
+  const orderedChoices = [];
+  if (question.type === "ORDERING") {
+    currentAnswer.selectedAnswers.forEach((answerText) => {
+      const choice = question.choices.find((c) => c.text === answerText);
+      if (choice) {
+        orderedChoices.push(choice);
+      }
+    });
+
+    question.choices.forEach((choice) => {
+      if (!orderedChoices.find((oc) => oc.id === choice.id)) {
+        orderedChoices.push(choice);
+      }
+    });
+  }
+
   const [localText, setLocalText] = useState(currentAnswer?.textAnswer || "");
   const debouncedSave = useCallback(
     debounce((value) => {
@@ -409,8 +436,13 @@ const RenderQuestionContent = ({
   switch (question.type) {
     case "MULTIPLE_CHOICE":
       return (
-        <FormControl component="fieldset" fullWidth disabled={isReview}>
-          <FormLabel component="legend">Select all that apply:</FormLabel>
+        <FormControl
+          component="fieldset"
+          fullWidth
+          disabled={isReview}
+          dir="rtl"
+        >
+          <FormLabel component="legend">اختر جميع الإجابات الصحيحة:</FormLabel>
           <FormGroup>
             {question.choices.map((choice) => (
               <FormControlLabel
@@ -433,15 +465,16 @@ const RenderQuestionContent = ({
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     {choice.text}
-                      <>
-                        {isReview && choice.isCorrect && <FaCheck color="green" />}
-                        {isReview &&
-                          !choice.isCorrect &&
-                          currentAnswer?.selectedAnswers?.includes(choice.text) && (
-                            <FaTimes color="red" />
-                          )}
-                      </>
-       
+                    <>
+                      {isReview && choice.isCorrect && (
+                        <FaCheck color="green" />
+                      )}
+                      {isReview &&
+                        !choice.isCorrect &&
+                        currentAnswer?.selectedAnswers?.includes(
+                          choice.text
+                        ) && <FaTimes color="red" />}
+                    </>
                   </Box>
                 }
               />
@@ -452,8 +485,13 @@ const RenderQuestionContent = ({
 
     case "SINGLE_CHOICE":
       return (
-        <FormControl component="fieldset" fullWidth disabled={isReview}>
-          <FormLabel component="legend">Select one:</FormLabel>
+        <FormControl
+          component="fieldset"
+          fullWidth
+          disabled={isReview}
+          dir="rtl"
+        >
+          <FormLabel component="legend">اختر إجابة واحدة:</FormLabel>
           <RadioGroup
             value={currentAnswer?.selectedAnswers?.[0] || ""}
             onChange={(e) =>
@@ -468,15 +506,16 @@ const RenderQuestionContent = ({
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     {choice.text}
-                      <>
-                        {isReview && choice.isCorrect && <FaCheck color="green" />}
-                        {isReview &&
-                          !choice.isCorrect &&
-                          currentAnswer?.selectedAnswers?.includes(choice.text) && (
-                            <FaTimes color="red" />
-                          )}
-                      </>
-               
+                    <>
+                      {isReview && choice.isCorrect && (
+                        <FaCheck color="green" />
+                      )}
+                      {isReview &&
+                        !choice.isCorrect &&
+                        currentAnswer?.selectedAnswers?.includes(
+                          choice.text
+                        ) && <FaTimes color="red" />}
+                    </>
                   </Box>
                 }
               />
@@ -487,8 +526,13 @@ const RenderQuestionContent = ({
 
     case "TRUE_FALSE":
       return (
-        <FormControl component="fieldset" fullWidth disabled={isReview}>
-          <FormLabel component="legend">True or False:</FormLabel>
+        <FormControl
+          component="fieldset"
+          fullWidth
+          disabled={isReview}
+          dir="rtl"
+        >
+          <FormLabel component="legend">صح أم خطأ:</FormLabel>
           <RadioGroup
             value={currentAnswer?.selectedAnswers?.[0] || ""}
             onChange={(e) =>
@@ -502,16 +546,21 @@ const RenderQuestionContent = ({
                 control={<Radio />}
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {choice.text}
-                      <>
-                        {isReview && choice.isCorrect && <FaCheck color="green" />}
-                        {isReview &&
-                          !choice.isCorrect &&
-                          currentAnswer?.selectedAnswers?.includes(choice.text) && (
-                            <FaTimes color="red" />
-                          )}
-                      </>
-                
+                    {choice.text === "True"
+                      ? "صح"
+                      : choice.text === "False"
+                      ? "خطأ"
+                      : choice.text}
+                    <>
+                      {isReview && choice.isCorrect && (
+                        <FaCheck color="green" />
+                      )}
+                      {isReview &&
+                        !choice.isCorrect &&
+                        currentAnswer?.selectedAnswers?.includes(
+                          choice.text
+                        ) && <FaTimes color="red" />}
+                    </>
                   </Box>
                 }
               />
@@ -522,35 +571,51 @@ const RenderQuestionContent = ({
 
     case "TEXT":
       return (
-        <Box>
-              {isReview && hasExhaustedAttempts && currentAnswer?.textAnswer && (
+        <Box dir="rtl">
+          {isReview && hasExhaustedAttempts && currentAnswer?.textAnswer && (
             <Box sx={{ my: 2, display: "flex", gap: 2, alignItems: "center" }}>
-                {!currentAnswer.isApproved&&
-
-                            <Button
-                variant={currentAnswer.isApproved === true ? "contained" : "outlined"}
-                color="success"
-                size="small"
-                startIcon={<FaThumbsUp />}
-                onClick={() => onApprovalChange(selectedAttempt.id, question.id, true)}
-                disabled={isApprovalLoading}
-              >
-                {isApprovalLoading ? <CircularProgress size={16} /> : "Approve This question"}
-              </Button>
-  }
-              {currentAnswer.isApproved&&
-              <Button
-                variant={currentAnswer.isApproved === false ? "contained" : "outlined"}
-                color="error"
-                size="small"
-                startIcon={<FaTimes />}
-                onClick={() => onApprovalChange(selectedAttempt.id, question.id, false)}
-                disabled={isApprovalLoading}
-              >
-                {isApprovalLoading ? <CircularProgress size={16} /> : "Disapprove this question"}
-              </Button>
-  }
-       
+              {!currentAnswer.isApproved && (
+                <Button
+                  variant={
+                    currentAnswer.isApproved === true ? "contained" : "outlined"
+                  }
+                  color="success"
+                  size="small"
+                  startIcon={<FaThumbsUp />}
+                  onClick={() =>
+                    onApprovalChange(selectedAttempt.id, question.id, true)
+                  }
+                  disabled={isApprovalLoading}
+                >
+                  {isApprovalLoading ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    "الموافقة على هذا السؤال"
+                  )}
+                </Button>
+              )}
+              {currentAnswer.isApproved && (
+                <Button
+                  variant={
+                    currentAnswer.isApproved === false
+                      ? "contained"
+                      : "outlined"
+                  }
+                  color="error"
+                  size="small"
+                  startIcon={<FaTimes />}
+                  onClick={() =>
+                    onApprovalChange(selectedAttempt.id, question.id, false)
+                  }
+                  disabled={isApprovalLoading}
+                >
+                  {isApprovalLoading ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    "رفض هذا السؤال"
+                  )}
+                </Button>
+              )}
             </Box>
           )}
           <TextField
@@ -560,17 +625,21 @@ const RenderQuestionContent = ({
             value={localText}
             onChange={handleLocalChange}
             onBlur={() => handleChange({ textAnswer: localText })}
-            placeholder="Enter your answer here..."
+            placeholder="أدخل إجابتك هنا..."
             disabled={isReview}
+            dir="rtl"
           />
-          
-      
         </Box>
       );
- case "ORDERING":
+
+    case "ORDERING":
       return (
-    <FormControl component="fieldset" fullWidth disabled={isReview}>
-    
+        <FormControl
+          component="fieldset"
+          fullWidth
+          disabled={isReview}
+          dir="rtl"
+        >
           <Box sx={{ mt: 2 }}>
             {orderedChoices?.map((choice, index) => (
               <Paper
@@ -584,7 +653,7 @@ const RenderQuestionContent = ({
                   justifyContent: "space-between",
                   border: "1px solid",
                   borderColor: "divider",
-                  backgroundColor: "background.paper"
+                  backgroundColor: "background.paper",
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -600,7 +669,7 @@ const RenderQuestionContent = ({
                       color: "primary.contrastText",
                       borderRadius: "50%",
                       fontSize: "0.75rem",
-                      fontWeight: "bold"
+                      fontWeight: "bold",
                     }}
                   >
                     {index + 1}
@@ -609,79 +678,107 @@ const RenderQuestionContent = ({
                 </Box>
 
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          minWidth: 24,
-                          height: 24,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: "success.main",
-                          color: "success.contrastText",
-                          borderRadius: "50%",
-                          fontSize: "0.75rem",
-                          fontWeight: "bold"
-                        }}
-                      >
-                        {(choice.order)}
-                      </Typography>
-                      {index+1 === (choice.order || 0) ? (
-                        <FaCheck color="green" />
-                      ) : (
-                        <FaTimes color="red" />
-                      )}
-                    </Box>
-                 
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        minWidth: 24,
+                        height: 24,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: "success.main",
+                        color: "success.contrastText",
+                        borderRadius: "50%",
+                        fontSize: "0.75rem",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {choice.order}
+                    </Typography>
+                    {index + 1 === (choice.order || 0) ? (
+                      <FaCheck color="green" />
+                    ) : (
+                      <FaTimes color="red" />
+                    )}
+                  </Box>
                 </Box>
               </Paper>
             ))}
           </Box>
-          
-  
         </FormControl>
       );
+
     default:
       return null;
   }
 };
-function AttemptsLimit({attempts,setAttempts,testId,userId}){
-  const {setToastLoading}=useToastContext()
-  if(!attempts||attempts.length===0)return
-  async function increaseAllowedAttempts(){
-const req=await handleRequestSubmit({},setToastLoading,`admin/courses/tests/${testId}/attempts/increase?userId=${userId}&`,false,"Updating",false)
-if(req.status===200){
- setAttempts((old) =>
-      old.map((attempt, index) =>
-        index === old.length - 1
-          ? { ...attempt, attemptLimit: attempt.attemptLimit + 1 }
-          : attempt
-      )
-    );}
+
+function AttemptsLimit({ attempts, setAttempts, testId, userId }) {
+  const { setToastLoading } = useToastContext();
+  if (!attempts || attempts.length === 0) return;
+
+  async function increaseAllowedAttempts() {
+    const req = await handleRequestSubmit(
+      {},
+      setToastLoading,
+      `admin/courses/tests/${testId}/attempts/increase?userId=${userId}&`,
+      false,
+      "جاري التحديث",
+      false
+    );
+    if (req.status === 200) {
+      setAttempts((old) =>
+        old.map((attempt, index) =>
+          index === old.length - 1
+            ? { ...attempt, attemptLimit: attempt.attemptLimit + 1 }
+            : attempt
+        )
+      );
+    }
   }
-    async function decreaseAllowedAttempts(){
-const req=await handleRequestSubmit({},setToastLoading,`admin/courses/tests/${testId}/attempts/decrease?userId=${userId}&`,false,"Updating",false)
-if(req.status===200){
- setAttempts((old) =>
-      old.map((attempt, index) =>
-        index === old.length - 1
-          ? { ...attempt, attemptLimit: attempt.attemptLimit - 1 }
-          : attempt
-      )
-    );}
+
+  async function decreaseAllowedAttempts() {
+    const req = await handleRequestSubmit(
+      {},
+      setToastLoading,
+      `admin/courses/tests/${testId}/attempts/decrease?userId=${userId}&`,
+      false,
+      "جاري التحديث",
+      false
+    );
+    if (req.status === 200) {
+      setAttempts((old) =>
+        old.map((attempt, index) =>
+          index === old.length - 1
+            ? { ...attempt, attemptLimit: attempt.attemptLimit - 1 }
+            : attempt
+        )
+      );
+    }
   }
-return(
-    <Box sx={{display:"flex",gap:2,alignItems:"center",mt:1.5}}>
-      <Button startIcon={<FaPlus/>} onClick={increaseAllowedAttempts} variant="outlined" >
-        Increase Allowed Attempt
+
+  return (
+    <Box
+      sx={{ display: "flex", gap: 2, alignItems: "center", mt: 1.5 }}
+      dir="rtl"
+    >
+      <Button
+        startIcon={<FaPlus />}
+        onClick={increaseAllowedAttempts}
+        variant="outlined"
+      >
+        زيادة المحاولات المسموحة
       </Button>
-        <Button startIcon={<FaMinus/>} onClick={decreaseAllowedAttempts} variant="outlined">
-        Decrease Allowed Attempt
+      <Button
+        startIcon={<FaMinus />}
+        onClick={decreaseAllowedAttempts}
+        variant="outlined"
+      >
+        تقليل المحاولات المسموحة
       </Button>
     </Box>
-)
-
+  );
 }
+
 export default ReviewAttempts;

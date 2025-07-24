@@ -51,8 +51,8 @@ import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
 import { useToastContext } from "@/app/providers/ToastLoadingProvider";
 import dayjs from "dayjs";
 import { MdArrowDownward, MdArrowUpward } from "react-icons/md";
-import HomeworkComponent from "../../lessons/staff/HomeworkComponent";
 import CombinedHomeWork from "../../lessons/staff/CombinedHomeWork";
+import { QuestionTypesLabels } from "@/app/helpers/constants";
 
 const TestComponent = ({
   courseId,
@@ -110,7 +110,7 @@ const TestComponent = ({
       setToastLoading,
       `shared/courses/tests/${testId}/attampts`,
       false,
-      "Creating"
+      "جاري الإنشاء"
     );
     if (req.status === 200) {
       await getUserAttempts();
@@ -157,7 +157,7 @@ const TestComponent = ({
         startTimer(ongoingAttempt, test);
       }
     } catch (error) {
-      console.error("Error loading test data:", error);
+      console.error("خطأ في تحميل بيانات الاختبار:", error);
     } finally {
       setLoading(false);
     }
@@ -217,9 +217,10 @@ const TestComponent = ({
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    return `${toArabicNumerals(mins)}:${toArabicNumerals(
+      secs.toString().padStart(2, "0")
+    )}`;
   };
-
   const handleStartNewAttempt = async () => {
     try {
       const newAttempt = await createAttempt();
@@ -234,7 +235,7 @@ const TestComponent = ({
         setIsTimerRunning(true);
       }
     } catch (error) {
-      console.error("Error starting new attempt:", error);
+      console.error("خطأ في بدء محاولة جديدة:", error);
     }
   };
   const handleAnswerChange = async (questionId, answer) => {
@@ -245,7 +246,7 @@ const TestComponent = ({
       try {
         await saveAnswer(currentAttempt.id, questionId, answer);
       } catch (error) {
-        console.error("Error saving answer:", error);
+        console.error("خطأ في حفظ الإجابة:", error);
       }
     }
   };
@@ -301,7 +302,7 @@ const TestComponent = ({
           !currentAttempt ? attempt.id : currentAttempt.id
         }`,
         false,
-        "Creating",
+        "جاري الحفظ",
         false,
         "PUT"
       );
@@ -321,7 +322,7 @@ const TestComponent = ({
         setTimeLeft(0);
       }
     } catch (error) {
-      console.error("Error submitting attempt:", error);
+      console.error("خطأ في إرسال المحاولة:", error);
     }
   };
   const lastAttempt = attempts?.length ? attempts[attempts.length - 1] : null;
@@ -361,21 +362,21 @@ const TestComponent = ({
           mb: 3,
         }}
       >
-        <Typography variant="h5">Test Attempts</Typography>
+        <Typography variant="h5">محاولات الاختبار</Typography>
         {canStartNewAttempt() && (
           <Button
             variant="contained"
             startIcon={<FaPlay />}
             onClick={() => setShowNewAttemptDialog(true)}
           >
-            Start New Attempt
+            بدء محاولة جديدة
           </Button>
         )}
       </Box>
 
       {attempts.length === 0 ? (
         <Alert severity="info">
-          No attempts yet. Click "Start New Attempt" to begin.
+          لا توجد محاولات بعد. اضغط على "بدء محاولة جديدة" للبداية.
         </Alert>
       ) : (
         <List>
@@ -393,20 +394,16 @@ const TestComponent = ({
                       }}
                     >
                       <Typography variant="h6">
-                        Attempt {attempt.attemptCount}
+                        المحاولة {toArabicNumerals(attempt.attemptCount)}
                       </Typography>
                       {attempt.endTime ? (
                         <Chip
-                          label={attempt.passed ? "Passed" : "Failed"}
+                          label={attempt.passed ? "نجح" : "فشل"}
                           color={attempt.passed ? "success" : "error"}
                           size="small"
                         />
                       ) : (
-                        <Chip
-                          label="In Progress"
-                          color="warning"
-                          size="small"
-                        />
+                        <Chip label="قيد التقدم" color="warning" size="small" />
                       )}
                     </Box>
                   }
@@ -414,7 +411,7 @@ const TestComponent = ({
                     <Box sx={{ mt: 1 }}>
                       <Box sx={{ mt: 1 }}>
                         <Typography variant="body2">
-                          Started:{" "}
+                          بدأت في:{" "}
                           {dayjs(attempt.startTime).format(
                             "DD/MM/YYYY - HH:mm"
                           )}
@@ -422,13 +419,13 @@ const TestComponent = ({
                         {attempt.endTime && (
                           <>
                             <Typography variant="body2">
-                              Completed:{" "}
+                              اكتملت في:{" "}
                               {dayjs(attempt.endTime).format(
                                 "DD/MM/YYYY - HH:mm"
                               )}
                             </Typography>
                             <Typography variant="body2">
-                              Score: {attempt.score}%
+                              النتيجة: {toArabicNumerals(attempt.score)}%
                             </Typography>
                           </>
                         )}
@@ -446,7 +443,7 @@ const TestComponent = ({
                         setViewMode("review");
                       }}
                     >
-                      Review
+                      مراجعة
                     </Button>
                   ) : (
                     <Button
@@ -459,7 +456,7 @@ const TestComponent = ({
                         startTimer(attempt, test);
                       }}
                     >
-                      Continue
+                      متابعة
                     </Button>
                   )}
                 </Box>
@@ -475,7 +472,7 @@ const TestComponent = ({
     if (!questions.length) return null;
 
     return (
-      <Box>
+      <Box sx={{ direction: "rtl" }}>
         <Box
           sx={{
             display: "flex",
@@ -488,7 +485,7 @@ const TestComponent = ({
             startIcon={<FaArrowLeft />}
             onClick={() => setViewMode("attempts")}
           >
-            Back to Attempts
+            العودة إلى المحاولات
           </Button>
           {test?.timeLimit && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -505,7 +502,7 @@ const TestComponent = ({
 
         <Box sx={{ mb: 3 }}>
           <Typography variant="body2" sx={{ mb: 1 }}>
-            Answer all questions below and click Submit when ready
+            أجب عن جميع الأسئلة أدناه واضغط حفظ عند الانتهاء
           </Typography>
           <LinearProgress variant="determinate" value={100} />
         </Box>
@@ -559,9 +556,11 @@ const TestComponent = ({
                   sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
                 >
                   <FaQuestionCircle />
-                  <Typography variant="h6">Question {index + 1}</Typography>
+                  <Typography variant="h6">
+                    السؤال رقم {toArabicNumerals(index + 1)}
+                  </Typography>{" "}
                   <Chip
-                    label={question.type.replace("_", " ")}
+                    label={QuestionTypesLabels[question.type]}
                     size="small"
                     variant="outlined"
                   />
@@ -587,16 +586,20 @@ const TestComponent = ({
             variant="contained"
             color="success"
             size="large"
-            startIcon={<FaCheck />}
+            endIcon={<FaCheck />}
             disabled={savingAnswers?.length > 0}
             onClick={handleSubmitAttempt}
           >
-            Submit Test
+            احفظ الاختبار
           </Button>
         </Box>
       </Box>
     );
   };
+  function toArabicNumerals(number) {
+    if (!number) return number;
+    return number.toString().replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+  }
 
   const renderReviewView = () => {
     if (!selectedAttemptForReview) return null;
@@ -610,7 +613,7 @@ const TestComponent = ({
     });
 
     return (
-      <Box>
+      <Box sx={{ direction: "rtl" }}>
         <Box
           sx={{
             display: "flex",
@@ -623,17 +626,17 @@ const TestComponent = ({
             startIcon={<FaArrowLeft />}
             onClick={() => setViewMode("attempts")}
           >
-            Back to Attempts
+            العودة إلى المحاولات
           </Button>
           <Typography variant="h5">
-            Review Attempt {selectedAttemptForReview.attemptCount}
+            مراجعة المحاولة{" "}
+            {toArabicNumerals(selectedAttemptForReview.attemptCount)}
           </Typography>
         </Box>
 
         <Alert severity="info" sx={{ mb: 3 }}>
-          Score: {selectedAttemptForReview.score}% | Status:{" "}
-          {selectedAttemptForReview.passed ? "Passed" : "Failed"} | Time:{" "}
-          {selectedAttemptForReview.timePassed} minutes
+          النتيجة: {toArabicNumerals(selectedAttemptForReview.score)}% | الحالة:{" "}
+          {selectedAttemptForReview.passed ? "نجح" : "فشل"}
         </Alert>
 
         {questions.map((question, index) => (
@@ -642,9 +645,11 @@ const TestComponent = ({
               <Box
                 sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
               >
-                <Typography variant="h6">Question {index + 1}</Typography>
+                <Typography variant="h6">
+                  السؤال {toArabicNumerals(index + 1)}
+                </Typography>
                 <Chip
-                  label={question.type.replace("_", " ")}
+                  label={QuestionTypesLabels[question.type]}
                   size="small"
                   variant="outlined"
                 />
@@ -685,7 +690,7 @@ const TestComponent = ({
   if (!test) {
     return (
       <Alert severity="error">
-        Test not found or you don't have permission to access it.
+        الاختبار غير موجود أو ليس لديك صلاحية للوصول إليه.
       </Alert>
     );
   }
@@ -693,43 +698,51 @@ const TestComponent = ({
   return (
     <Box sx={{ maxWidth: "1200px", mx: "auto", p: 3 }}>
       {/* Test Header */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          {test.title}
-        </Typography>
-        <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
-          <Chip label={test.type} variant="outlined" />
-          <Chip label={`${attemptLimit} attempts allowed`} variant="outlined" />
-          {test.timeLimit && (
-            <Chip label={`${test.timeLimit} minutes`} variant="outlined" />
-          )}
-        </Box>
-        <Typography variant="body1" color="text.secondary">
-          {test.course
-            ? `Course: ${test.course?.title}`
-            : `Lesson: ${test.lesson?.title}`}
-        </Typography>
-        {!test.course &&
-          test.lessonId &&
-          attempts &&
-          attempts.find((attempt) => attempt.passed) &&
-          mustAddHomeWork && (
-            <Box sx={{ mt: 2 }}>
-              <CombinedHomeWork
-                courseId={courseId}
-                lessonId={test.lessonId}
-                onUpdate={() => {
-                  if (onComplete) {
-                    onComplete();
-                  }
-                  if (setCompleted) {
-                    setCompleted(true);
-                  }
-                }}
+      {viewMode !== "test" && (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h4" gutterBottom>
+            {test.title}
+          </Typography>
+          <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
+            <Chip label={test.type} variant="outlined" />
+            <Chip
+              label={`${toArabicNumerals(attemptLimit)} محاولات مسموحة`}
+              variant="outlined"
+            />
+            {test.timeLimit && (
+              <Chip
+                label={`${toArabicNumerals(test.timeLimit)} دقيقة`}
+                variant="outlined"
               />
-            </Box>
-          )}
-      </Paper>
+            )}
+          </Box>
+          <Typography variant="body1" color="text.secondary">
+            {test.course
+              ? `الكورس: ${test.course?.title}`
+              : `الدرس: ${test.lesson?.title}`}
+          </Typography>
+          {!test.course &&
+            test.lessonId &&
+            attempts &&
+            attempts.find((attempt) => attempt.passed) &&
+            mustAddHomeWork && (
+              <Box sx={{ mt: 2 }}>
+                <CombinedHomeWork
+                  courseId={courseId}
+                  lessonId={test.lessonId}
+                  onUpdate={() => {
+                    if (onComplete) {
+                      onComplete();
+                    }
+                    if (setCompleted) {
+                      setCompleted(true);
+                    }
+                  }}
+                />
+              </Box>
+            )}
+        </Paper>
+      )}
 
       {viewMode === "attempts" && renderAttemptsList()}
       {viewMode === "test" &&
@@ -741,22 +754,23 @@ const TestComponent = ({
         open={showNewAttemptDialog}
         onClose={() => setShowNewAttemptDialog(false)}
       >
-        <DialogTitle>Start New Test Attempt</DialogTitle>
+        <DialogTitle>بدء محاولة اختبار جديدة</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            You are about to start a new test attempt.
+            أنت على وشك بدء محاولة اختبار جديدة.
             {test.timeLimit &&
-              ` You will have ${test.timeLimit} minutes to complete the test.`}
+              ` سيكون لديك ${toArabicNumerals(
+                test.timeLimit
+              )} دقيقة لإكمال الاختبار.`}
           </Typography>
           <Alert severity="warning">
-            Make sure you have a stable internet connection and enough time to
-            complete the test.
+            تأكد من أن لديك اتصال إنترنت مستقر ووقت كافي لإكمال الاختبار.
           </Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowNewAttemptDialog(false)}>Cancel</Button>
+          <Button onClick={() => setShowNewAttemptDialog(false)}>إلغاء</Button>
           <Button onClick={handleStartNewAttempt} variant="contained">
-            Start Test
+            بدء الاختبار
           </Button>
         </DialogActions>
       </Dialog>
@@ -936,7 +950,7 @@ const RenderQuestionContent = ({
     case "TRUE_FALSE":
       return (
         <FormControl component="fieldset" fullWidth disabled={isReview}>
-          <FormLabel component="legend">True or False:</FormLabel>
+          <FormLabel component="legend">صح ام خطاء:</FormLabel>
           <RadioGroup
             value={currentAnswer?.selectedAnswers?.[0] || ""}
             onChange={(e) =>
@@ -950,7 +964,7 @@ const RenderQuestionContent = ({
                 control={<Radio />}
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {choice.text}
+                    {choice.text === "True" ? "صح" : "خطاء"}
                     {attempts && attempts.find((attempt) => attempt.passed) && (
                       <>
                         {isReview && choice.isCorrect && (
@@ -990,7 +1004,7 @@ const RenderQuestionContent = ({
       return (
         <FormControl component="fieldset" fullWidth disabled={isReview}>
           <FormLabel component="legend">
-            Use arrows to reorder items from first to last:
+            استخدم الاسهم لتحريك الاجابات
           </FormLabel>
           <Box sx={{ mt: 2 }}>
             {orderedChoices.map((choice, index) => (

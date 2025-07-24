@@ -77,7 +77,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
       setSubmitting,
       "utility/upload",
       true,
-      "Uploading file"
+      "جاري رفع الملف"
     );
     if (uploadResponse.status === 200) {
       url = uploadResponse.fileUrls.file[0];
@@ -108,7 +108,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
   const canProceed = hasSummary && hasVideo;
 
   return (
-    <Box>
+    <Box dir="rtl">
       <Box sx={{ mb: 3 }}>
         <Box
           sx={{
@@ -122,7 +122,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
             variant="h5"
             sx={{ fontWeight: 600, color: "text.primary" }}
           >
-            Lesson Homework
+            واجبات الدرس
           </Typography>
           <Button
             variant="contained"
@@ -135,7 +135,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
               py: 1,
             }}
           >
-            View Requirements
+            عرض المتطلبات
           </Button>
         </Box>
 
@@ -165,19 +165,17 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
                   variant="subtitle1"
                   sx={{ fontWeight: 600, mb: 0.5 }}
                 >
-                  {canProceed
-                    ? "All Requirements Complete!"
-                    : "Homework Required"}
+                  {canProceed ? "تم إكمال جميع المتطلبات!" : "الواجب مطلوب"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {canProceed
-                    ? "You can now proceed to the next lesson or test."
-                    : `Submit a pdf summary and video to continue.`}
+                    ? "يمكنك الآن الانتقال إلى الدرس التالي أو الاختبار."
+                    : `يجب تقديم ملخص بصيغة PDF وفيديو للمتابعة.`}
                 </Typography>
               </Box>
               {canProceed && (
                 <Chip
-                  label="Ready"
+                  label="جاهز"
                   color="success"
                   variant="filled"
                   sx={{ fontWeight: 600 }}
@@ -206,7 +204,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
         }}
       >
         <DialogTitle sx={{ pb: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }} dir="rtl">
             <Box
               sx={{
                 p: 1,
@@ -218,22 +216,22 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
               <FiBookOpen size={20} />
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Homework
+              الواجبات
             </Typography>
           </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ position: "relative", px: 2 }}>
+        <DialogContent sx={{ position: "relative", px: 2 }} dir="rtl">
           {loading && <LoadingOverlay />}
 
           {/* Quick Actions */}
           <Box sx={{ mb: 4 }}>
             <Box sx={{ mb: 2 }}>
               <Typography variant="h6" sx={{ mb: 0, fontWeight: 600 }}>
-                Submit Your Work
+                قدم عملك
               </Typography>
               <Typography variant="caption" sx={{ mb: 2 }}>
-                You must upload at least one summary pdf and one video
+                يجب رفع ملخص واحد على الأقل بصيغة PDF وفيديو واحد
               </Typography>
             </Box>
             <Box sx={{ display: "flex", gap: 2, flexWrap: "no-wrap" }}>
@@ -255,7 +253,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
                   },
                 }}
               >
-                Upload Video
+                رفع فيديو
               </Button>
               <Button
                 variant="outlined"
@@ -276,7 +274,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
                   },
                 }}
               >
-                Upload Summary
+                رفع ملخص
               </Button>
             </Box>
           </Box>
@@ -315,10 +313,10 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
                     color="text.secondary"
                     sx={{ mb: 1 }}
                   >
-                    Video Submissions
+                    مقاطع الفيديو المقدمة
                   </Typography>
                   <Chip
-                    label={hasVideo ? "Complete" : "Required"}
+                    label={hasVideo ? "مكتمل" : "مطلوب"}
                     color={hasVideo ? "primary" : "default"}
                     variant={hasVideo ? "filled" : "outlined"}
                     size="small"
@@ -359,10 +357,10 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
                     color="text.secondary"
                     sx={{ mb: 1 }}
                   >
-                    Summary Submissions
+                    الملخصات المقدمة
                   </Typography>
                   <Chip
-                    label={hasSummary ? "Complete" : "Required"}
+                    label={hasSummary ? "مكتمل" : "مطلوب"}
                     color={hasSummary ? "secondary" : "default"}
                     variant={hasSummary ? "filled" : "outlined"}
                     size="small"
@@ -377,7 +375,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
             sx={{ p: { xs: 1.5, md: 3 }, borderRadius: 3, bgcolor: "grey.50" }}
           >
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Your Submissions
+              مقدماتك
             </Typography>
 
             {loading ? (
@@ -391,10 +389,10 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
                   color="text.secondary"
                   sx={{ mb: 2 }}
                 >
-                  No submissions yet
+                  لا توجد مقدمات بعد
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Upload your homework files to get started
+                  ارفع ملفات واجباتك للبدء
                 </Typography>
               </Box>
             ) : (
@@ -443,7 +441,9 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
                               }}
                             >
                               <Chip
-                                label={homework.type}
+                                label={
+                                  homework.type === "VIDEO" ? "فيديو" : "ملخص"
+                                }
                                 size="small"
                                 color={
                                   homework.type === "VIDEO"
@@ -463,7 +463,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
                                   borderRadius: 1.5,
                                 }}
                               >
-                                View File
+                                عرض الملف
                               </Button>
                             </Box>
                           }
@@ -488,7 +488,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
               borderRadius: 2,
             }}
           >
-            Close
+            إغلاق
           </Button>
         </DialogActions>
       </Dialog>
@@ -506,7 +506,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
         }}
       >
         <DialogTitle>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }} dir="rtl">
             <Box
               sx={{
                 p: 1,
@@ -522,15 +522,15 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
               <FiUpload size={20} />
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Upload {uploadType === "VIDEO" ? "Video" : "Summary"}
+              رفع {uploadType === "VIDEO" ? "فيديو" : "ملخص"}
             </Typography>
           </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ pt: "24px !important" }}>
+        <DialogContent sx={{ pt: "24px !important" }} dir="rtl">
           <TextField
             fullWidth
-            label="Assignment Title"
+            label="عنوان"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             sx={{
@@ -540,16 +540,14 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
               },
             }}
             required
-            placeholder={`Enter a title for your ${
-              uploadType === "VIDEO" ? "video" : "summary"
+            placeholder={`أدخل عنواناً لـ${
+              uploadType === "VIDEO" ? "الفيديو" : "الملخص"
             }`}
           />
           <SimpleFileInput
             id="file"
             setData={setFile}
-            label={
-              uploadType === "VIDEO" ? "Choose video file" : "Choose document"
-            }
+            label={uploadType === "VIDEO" ? "اختر ملف فيديو" : "اختر مستند"}
             input={{
               accept: uploadType === "VIDEO" ? "video/*" : "application/pdf",
             }}
@@ -567,7 +565,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
               borderRadius: 2,
             }}
           >
-            Cancel
+            إلغاء
           </Button>
           <Button
             onClick={handleSubmit}
@@ -582,7 +580,7 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
               borderRadius: 2,
             }}
           >
-            {submitting ? "Uploading..." : "Upload File"}
+            {submitting ? "جاري الرفع..." : "رفع الملف"}
           </Button>
         </DialogActions>
       </Dialog>

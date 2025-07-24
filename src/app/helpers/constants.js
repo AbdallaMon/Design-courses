@@ -47,5 +47,13 @@ export const QuestionTypes = {
   SINGLE_CHOICE: "SINGLE_CHOICE",
   TRUE_FALSE: "TRUE_FALSE",
   TEXT: "TEXT",
-  ORDERING:"ORDERING"
+  ORDERING: "ORDERING",
+};
+
+export const QuestionTypesLabels = {
+  MULTIPLE_CHOICE: "اختيار من متعدد",
+  SINGLE_CHOICE: "اختيار واحد",
+  TRUE_FALSE: "صح أو خطأ",
+  TEXT: "إجابة نصية",
+  ORDERING: "ترتيب",
 };
