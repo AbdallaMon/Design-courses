@@ -300,10 +300,10 @@ const LesssonView = ({ courseId }) => {
               lesson.tests.length === testIndex + 1 &&
               lesson.mustUploadHomework,
           });
-          if (canPreviewTest && hasPassed) {
+          if (canPreviewTest && !stop) {
             lastAvailableIndex++;
           }
-          if (!canPreviewTest && !hasPassed) {
+          if (!canPreviewTest) {
             stop = true;
           }
         });

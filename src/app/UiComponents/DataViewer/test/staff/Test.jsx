@@ -672,7 +672,7 @@ const TestComponent = ({
     );
   };
 
-  if (loading) {
+  if (loading || !test) {
     return (
       <Box
         sx={{
@@ -687,14 +687,14 @@ const TestComponent = ({
     );
   }
 
-  if (!test) {
+  if (!test && !loading && !attempts) {
     return (
       <Alert severity="error">
         الاختبار غير موجود أو ليس لديك صلاحية للوصول إليه.
       </Alert>
     );
   }
-
+  if (!test) return;
   return (
     <Box sx={{ maxWidth: "1200px", mx: "auto", p: 3 }}>
       {/* Test Header */}
