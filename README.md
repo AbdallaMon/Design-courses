@@ -6,9 +6,9 @@
 - Link a pdf to a video how can we make this?
 - Fix Course Progress
 - Make uploading home work optional (a toggle button)
-
-- Check the ordering questions
 - Direction rtl
+- Check the ordering questions
+
 - Check what to do if admin delete a question that is related to a testAttempt
 - Each test a unique score limit
 

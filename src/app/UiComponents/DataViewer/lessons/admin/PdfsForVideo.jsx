@@ -24,6 +24,8 @@ import { useToastContext } from "@/app/providers/ToastLoadingProvider";
 import { useAlertContext } from "@/app/providers/MuiAlert";
 import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
 import { MdAdd, MdClose, MdDownload, MdPictureAsPdf } from "react-icons/md";
+import { uploadInChunks } from "@/app/helpers/functions/uploadAsChunk";
+import { useUploadContext } from "@/app/providers/UploadingProgressProvider";
 
 const LessonVideoPdfManager = ({ lessonId, courseId, lessonVideoId }) => {
   const [open, setOpen] = useState(false);
@@ -36,6 +38,8 @@ const LessonVideoPdfManager = ({ lessonId, courseId, lessonVideoId }) => {
   const [error, setError] = useState("");
   const { setToastLoading } = useToastContext();
   const { setAlertError } = useAlertContext();
+  const { setProgress, setOverlay } = useUploadContext();
+
   // Mock API functions - replace with your actual API calls
   const fetchPdfs = async () => {
     await getDataAndSet({
@@ -45,18 +49,10 @@ const LessonVideoPdfManager = ({ lessonId, courseId, lessonVideoId }) => {
     });
   };
   async function handleFileUpload(file) {
-    const fileformData = new FormData();
-    fileformData.append("file", file);
+    const fileUpload = await uploadInChunks(file, setProgress, setOverlay);
 
-    const uploadResponse = await handleRequestSubmit(
-      fileformData,
-      setToastLoading,
-      "utility/upload",
-      true,
-      "Uploading file"
-    );
-    if (uploadResponse.status === 200) {
-      setPdfUrl(uploadResponse.fileUrls.file[0]);
+    if (fileUpload.status === 200) {
+      setPdfUrl(fileUpload.url);
     }
   }
 

@@ -46,6 +46,8 @@ import Link from "next/link";
 import FullScreenLoader from "@/app/UiComponents/feedback/loaders/FullscreenLoader";
 import PaginationWithLimit from "../../PaginationWithLimit";
 import SimpleFileInput from "@/app/UiComponents/formComponents/SimpleFileInput";
+import { useUploadContext } from "@/app/providers/UploadingProgressProvider";
+import { uploadInChunks } from "@/app/helpers/functions/uploadAsChunk";
 
 const getRoleColor = (role) => {
   const colors = {
@@ -68,6 +70,8 @@ export default function CourseAdminPage() {
   const [limit, setLimit] = useState(initialPageLimit);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const { setProgress, setOverlay } = useUploadContext();
+
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
@@ -105,17 +109,12 @@ export default function CourseAdminPage() {
 
   const handleSaveEdit = async () => {
     if (editForm.file) {
-      const fileformData = new FormData();
-      fileformData.append("file", editForm.file);
-
-      const uploadResponse = await handleRequestSubmit(
-        fileformData,
-        setToastLoading,
-        "utility/upload",
-        true,
-        "Uploading file"
+      const fileUpload = await uploadInChunks(
+        editForm.file,
+        setProgress,
+        setOverlay
       );
-      editForm.imageUrl = uploadResponse.fileUrls.file[0];
+      editForm.imageUrl = fileUpload.url;
     }
     delete editForm.file;
     const req = await handleRequestSubmit(

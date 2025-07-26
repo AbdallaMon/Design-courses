@@ -27,6 +27,8 @@ import { useAlertContext } from "@/app/providers/MuiAlert";
 import SimpleFileInput from "@/app/UiComponents/formComponents/SimpleFileInput";
 import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
 import { useToastContext } from "@/app/providers/ToastLoadingProvider";
+import { uploadInChunks } from "@/app/helpers/functions/uploadAsChunk";
+import { useUploadContext } from "@/app/providers/UploadingProgressProvider";
 
 function CreateCourseDialog({ open, onClose, onCourseCreate }) {
   const [formData, setFormData] = useState({
@@ -41,6 +43,7 @@ function CreateCourseDialog({ open, onClose, onCourseCreate }) {
   const { toastLoading, setToastLoading } = useToastContext();
   const { user } = useAuth();
   const hasAdminAccess = checkIfAdmin(user);
+  const { setProgress, setOverlay } = useUploadContext();
 
   const validateForm = () => {
     if (!formData.title.trim()) {
@@ -75,17 +78,12 @@ function CreateCourseDialog({ open, onClose, onCourseCreate }) {
     if (!validateForm()) return;
 
     if (formData.file) {
-      const fileformData = new FormData();
-      fileformData.append("file", formData.file);
-
-      const uploadResponse = await handleRequestSubmit(
-        fileformData,
-        setToastLoading,
-        "utility/upload",
-        true,
-        "Uploading file"
+      const fileUpload = await uploadInChunks(
+        formData.file,
+        setProgress,
+        setOverlay
       );
-      formData.imageUrl = uploadResponse.fileUrls.file[0];
+      formData.imageUrl = fileUpload.url;
     }
     delete formData.file;
     const req = await handleRequestSubmit(

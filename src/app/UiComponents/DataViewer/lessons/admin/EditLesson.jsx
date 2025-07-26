@@ -52,6 +52,8 @@ import FullScreenLoader from "@/app/UiComponents/feedback/loaders/FullscreenLoad
 import LoadingOverlay from "@/app/UiComponents/feedback/loaders/LoadingOverlay";
 import SimpleFileInput from "@/app/UiComponents/formComponents/SimpleFileInput";
 import LessonVideoPdfManager from "./PdfsForVideo";
+import { uploadInChunks } from "@/app/helpers/functions/uploadAsChunk";
+import { useUploadContext } from "@/app/providers/UploadingProgressProvider";
 
 // Enhanced Edit Lesson Info Component
 const EditLessonInfo = ({ courseId, lessonId }) => {
@@ -1171,6 +1173,7 @@ const PDFsSection = ({ courseId, lessonId }) => {
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const { toastLoading, setToastLoading } = useToastContext();
+  const { setProgress, setOverlay } = useUploadContext();
 
   async function getPdfs() {
     await getDataAndSet({
@@ -1241,20 +1244,12 @@ const PDFsSection = ({ courseId, lessonId }) => {
     }
   };
   async function handleUploadImage(file, type) {
-    const fileformData = new FormData();
-    fileformData.append("file", file);
+    const fileUpload = await uploadInChunks(file, setProgress, setOverlay);
 
-    const uploadResponse = await handleRequestSubmit(
-      fileformData,
-      setToastLoading,
-      "utility/upload",
-      true,
-      "Uploading file"
-    );
     if (type === "CREATE") {
-      setNewPdf((old) => ({ ...old, url: uploadResponse.fileUrls.file[0] }));
+      setNewPdf((old) => ({ ...old, url: fileUpload.url }));
     } else {
-      setEditData({ ...old, url: uploadResponse.fileUrls.file[0] });
+      setEditData({ ...old, url: fileUpload.url });
     }
   }
   return (

@@ -35,6 +35,8 @@ import SimpleFileInput from "@/app/UiComponents/formComponents/SimpleFileInput";
 import { useToastContext } from "@/app/providers/ToastLoadingProvider";
 import { handleRequestSubmit } from "@/app/helpers/functions/handleSubmit";
 import LoadingOverlay from "@/app/UiComponents/feedback/loaders/LoadingOverlay";
+import { uploadInChunks } from "@/app/helpers/functions/uploadAsChunk";
+import { useUploadContext } from "@/app/providers/UploadingProgressProvider";
 
 const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
   const [homeworkDialog, setHomeworkDialog] = useState(false);
@@ -44,6 +46,8 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
   const [file, setFile] = useState(null);
   const [homeworks, setHomeworks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { setProgress, setOverlay } = useUploadContext();
+
   const { toastLoading: submitting, setToastLoading: setSubmitting } =
     useToastContext();
   const theme = useTheme();
@@ -70,17 +74,10 @@ const CombinedHomeWork = ({ courseId, lessonId, onUpdate }) => {
       return;
     }
     let url = "";
-    const fileformData = new FormData();
-    fileformData.append("file", file.file);
-    const uploadResponse = await handleRequestSubmit(
-      fileformData,
-      setSubmitting,
-      "utility/upload",
-      true,
-      "جاري رفع الملف"
-    );
-    if (uploadResponse.status === 200) {
-      url = uploadResponse.fileUrls.file[0];
+    const fileUpload = await uploadInChunks(file.file, setProgress, setOverlay);
+
+    if (fileUpload.status === 200) {
+      url = fileUpload.url;
     }
 
     const req = await handleRequestSubmit(

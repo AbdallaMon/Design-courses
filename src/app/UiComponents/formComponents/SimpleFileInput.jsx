@@ -8,51 +8,50 @@ export default function SimpleFileInput({
   variant = "filled",
   setData,
   handleUpload,
-  helperText = "Max file uploads : 100mb",
+  helperText = "Max file uploads : 80mb",
 }) {
   const [preview, setPreview] = useState();
   const [fileName, setFileName] = useState(""); // Track file name
   const [error, setError] = useState(null); // Track file error
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    const MAX_FILE_SIZE = 100 * 1024 * 1024;
-    if(!file)return
+    const MAX_FILE_SIZE = 80 * 1024 * 1024;
+    if (!file) return;
     if (file.size > MAX_FILE_SIZE) {
-      setError(`File size exceeds the 100MB limit.`);
+      setError(`File size exceeds the 80MB limit.`);
       setPreview(null);
       setFileName("");
       return;
     }
     setError(null);
 
-  const accept = input?.accept || null;
-  const fileType = file.type;
+    const accept = input?.accept || null;
+    const fileType = file.type;
 
-  const isVideo = accept?.includes("video/*");
-  const isImage = accept?.includes("image/*");
-  const isPdf = accept?.includes("application/pdf");
+    const isVideo = accept?.includes("video/*");
+    const isImage = accept?.includes("image/*");
+    const isPdf = accept?.includes("application/pdf");
 
-  const isAccepted =!accept||
-    (isVideo && fileType.startsWith("video/")) ||
-    (isImage && fileType.startsWith("image/")) ||
-    (isPdf && fileType === "application/pdf");
+    const isAccepted =
+      !accept ||
+      (isVideo && fileType.startsWith("video/")) ||
+      (isImage && fileType.startsWith("image/")) ||
+      (isPdf && fileType === "application/pdf");
 
-  if (!isAccepted) {
-    const allowedTypes = [];
-    if (isVideo) allowedTypes.push("Videos");
-    if (isImage) allowedTypes.push("Images");
-    if (isPdf) allowedTypes.push("PDFs");
+    if (!isAccepted) {
+      const allowedTypes = [];
+      if (isVideo) allowedTypes.push("Videos");
+      if (isImage) allowedTypes.push("Images");
+      if (isPdf) allowedTypes.push("PDFs");
 
-    setError(
-      `File type not allowed. Allowed types: ${allowedTypes.join(", ")}.`
-    );
-    setPreview(null);
-    setFileName("");
-    return;
-  }
+      setError(
+        `File type not allowed. Allowed types: ${allowedTypes.join(", ")}.`
+      );
+      setPreview(null);
+      setFileName("");
+      return;
+    }
     if (file) {
-
-
       setFileName(file.name); // Store file name
       const reader = new FileReader();
       const fileBlob = URL.createObjectURL(file);
@@ -92,11 +91,10 @@ export default function SimpleFileInput({
           variant={variant}
           helperText={helperText}
           fullWidth
-                    accept={input?.accept}
+          accept={input?.accept}
           slotProps={{
             htmlInput: {
-                            accept: input?.accept ?? "image/*",
-
+              accept: input?.accept ?? "image/*",
             },
 
             inputLabel: { shrink: true },
