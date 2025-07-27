@@ -572,7 +572,7 @@ const RenderQuestionContent = ({
     case "TEXT":
       return (
         <Box dir="rtl">
-          {isReview && hasExhaustedAttempts && currentAnswer?.textAnswer && (
+          {isReview && currentAnswer?.textAnswer && (
             <Box sx={{ my: 2, display: "flex", gap: 2, alignItems: "center" }}>
               {!currentAnswer.isApproved && (
                 <Button
@@ -590,7 +590,7 @@ const RenderQuestionContent = ({
                   {isApprovalLoading ? (
                     <CircularProgress size={16} />
                   ) : (
-                    "الموافقة على هذا السؤال"
+                    "اعتمالد هذه الاجابة؟"
                   )}
                 </Button>
               )}
