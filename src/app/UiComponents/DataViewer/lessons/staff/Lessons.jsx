@@ -310,7 +310,12 @@ const LesssonView = ({ courseId }) => {
       }
     });
 
+    console.log(items, "items");
+    console.log(lastAvailableIndex, "lastAvailableIndex");
+
     if (
+      items &&
+      items.length > 0 &&
       lastAvailableIndex === items.length - 1 &&
       items[lastAvailableIndex].canPreview
     ) {
