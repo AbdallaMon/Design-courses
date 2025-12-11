@@ -310,9 +310,6 @@ const LesssonView = ({ courseId }) => {
       }
     });
 
-    console.log(items, "items");
-    console.log(lastAvailableIndex, "lastAvailableIndex");
-
     if (
       items &&
       items.length > 0 &&

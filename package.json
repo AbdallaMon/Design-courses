@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start -p 4010",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -19,9 +19,9 @@
     "dayjs": "^1.11.13",
     "html-react-parser": "^5.2.5",
     "mui-tel-input": "^9.0.1",
-    "next": "15.3.5",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "next": "16.0.8",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
     "react-hook-form": "^7.60.0",
     "react-icons": "^5.5.0",
     "react-toastify": "^11.0.5",
@@ -29,8 +29,7 @@
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
     "eslint": "^9",
-    "eslint-config-next": "15.3.5"
+    "eslint-config-next": "16.0.8"
   }
 }
